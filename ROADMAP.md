@@ -1,134 +1,127 @@
-### 🏁 Phase 0: Infrastructure & Foundation (Sudah Selesai)
-*Status: Ready to Code*
-* [x] Setup Project (Node 24, TS, Express).
-* [x] Setup Docker (App, PG, Redis, MinIO).
-* [x] Final Database Schema (Normalized).
-* [x] Base Config (Logger, Prisma, Swagger, Zod).
+# 🗺️ Rentverse Project Roadmap
+
+This document outlines the development stages for the **Rentverse Backend API**.
+It follows a **Modular Monolith** approach, prioritizing foundational stability (Infrastructure) before moving to complex business logic (Trust Scoring).
+
+**Current Status:** 🚧 Phase 0 (Infrastructure Ready)
 
 ---
 
-### 📅 Phase 1: Identity & Access (Minggu 1)
-**Fokus:** Memastikan user bisa masuk dan sistem tahu siapa mereka (RBAC).
+## 🏁 Phase 0: Foundation & Infrastructure (Week 1 - Days 1-2)
+**Goal:** Establish a stable development environment (`dev`) and ensure all systems (DB, Cache, Storage) are communicating.
 
-**Tasks:**
-1.  **Seeding Data Master:**
-    * Jalankan `npm run db:seed` untuk mengisi tabel `Roles`, `PropertyType`, `TrustEvent`, dll. *Tanpa ini aplikasi error.*
-2.  **Auth Service:**
-    * Implementasi Register (User + Role + Auto-create Trust Profile).
-    * Implementasi Login (Generate JWT).
-3.  **RBAC Middleware:**
-    * Implementasi logika cek Redis untuk Permission.
-    * Buat decorator/middleware `@Can('trust.score.update')`.
-4.  **Storage Service:**
-    * Implementasi upload file ke MinIO (Public untuk Avatar).
-    * Update profil user (Upload Avatar).
-
-**Definition of Done:**
-* Bisa Register sebagai Tenant & Landlord via Swagger.
-* Bisa Login dan dapat JWT Token.
-* Admin bisa login (akun dari seeder).
-
----
-
-### 📅 Phase 2: Rental Marketplace (Minggu 2)
-**Fokus:** Produk utama. Landlord posting, Tenant searching.
-
-**Tasks:**
-1.  **Property CRUD:**
-    * Create Property (Wajib validasi Zod untuk `amenities`, `location`).
-    * Upload Foto Properti (Multiple upload ke MinIO Public).
-2.  **Search & Filter:**
-    * Implementasi `GET /properties` dengan filter (City, Price Range, Type).
-    * Implementasi Pagination helper.
-3.  **Favorites:**
-    * Add/Remove to Wishlist.
-
-**Definition of Done:**
-* Landlord bisa membuat listing properti lengkap dengan foto.
-* Tenant bisa mencari properti berdasarkan kota dan harga.
-* Response API menggunakan format standar (`data`, `meta`).
+- [ ] **Project Initialization**
+    - [x] Setup Node.js v24 LTS + TypeScript (Strict Mode).
+    - [x] Configure ESLint & Prettier.
+    - [x] Setup Modular Folder Structure (`src/modules/*`).
+- [ ] **Containerization (DevOps)**
+    - [x] Create `Dockerfile` (Multi-stage build).
+    - [x] Create `docker-compose.yml` (App, Postgres 15, Redis, MinIO).
+    - [ ] Verify Healthchecks for all containers.
+- [ ] **Database & Seeding (CRITICAL)**
+    - [x] Define Prisma Schema v3.1 (EAV, Multi-role, Indexes).
+    - [ ] Create `seed.ts` to populate Master Data (PropertyAttributes, Roles, BillingPeriods).
+    - [ ] Verify `npx prisma db push` works without errors.
+- [ ] **Core Utilities**
+    - [ ] Implement `Logger` (Winston).
+    - [ ] Implement `AppError` & Global Error Handler.
+    - [ ] Implement `ResponseHelper` (Standard JSON & Pagination).
+    - [ ] Setup `Swagger` base configuration.
 
 ---
 
-### 📅 Phase 3: Transaction Engine (Minggu 3)
-**Fokus:** Uang masuk, Status Booking berubah. Ini bagian paling kritis.
+## 🔐 Phase 1: Identity & Access Management (Week 1 - Days 3-5)
+**Goal:** Enable user registration, secure authentication, and role-based access.
 
-**Tasks:**
-1.  **Booking Logic:**
-    * Tenant melakukan Booking (Pilih `BillingPeriod`).
-    * Validasi: Cek ketersediaan tanggal.
-2.  **Payment Integration (Midtrans):**
-    * Generate Invoice pertama saat Booking.
-    * Integrasi `midtrans-client` (Snap API).
-3.  **Webhook Handler:**
-    * Buat endpoint untuk menerima notifikasi Midtrans.
-    * Update status Invoice (`PENDING` -> `PAID`).
-    * Update status Booking (`ACTIVE`).
-4.  **Recurring Scheduler:**
-    * Setup `node-cron` untuk cek H-7 jatuh tempo.
-    * Auto-generate invoice baru untuk bulan depan.
-
-**Definition of Done:**
-* Tenant bisa checkout dan muncul pop-up Midtrans (Mock/Sandbox).
-* Setelah bayar, status di database otomatis berubah jadi PAID.
-* Cron job berjalan dan tidak error.
+- [ ] **Auth Module**
+    - [ ] `POST /auth/register`: Register as Tenant/Landlord (Auto-create Trust Profile).
+    - [ ] `POST /auth/login`: Issue JWT Access Token.
+    - [ ] `POST /auth/refresh-token`: (Optional) Rotate tokens.
+    - [ ] `GET /auth/me`: Get current user profile.
+- [ ] **RBAC & Security**
+    - [ ] Middleware: `verifyToken` (JWT Validation).
+    - [ ] Middleware: `requireRole` & `can` (Check Redis/DB for Permissions).
+    - [ ] Implement Rate Limiting (Helmet/Express-Rate-Limit).
+- [ ] **Profile Management**
+    - [ ] `PUT /users/profile`: Update name, phone (JSONB metadata).
+    - [ ] **Storage Integration:** Upload Avatar to MinIO (**Public Bucket**).
 
 ---
 
-### 📅 Phase 4: Trust Engine & KYC (Minggu 4)
-**Fokus:** Nilai jual utama ("Real Analytical Thinking").
+## 🏠 Phase 2: Rental Marketplace Engine (Week 2)
+**Goal:** Allow Landlords to list properties with dynamic specs and Tenants to search them.
 
-**Tasks:**
-1.  **KYC System:**
-    * Upload KTP & Selfie (MinIO Private).
-    * Admin Approval Endpoint.
-    * Middleware `requireVerified` dipasang di Booking.
-2.  **Trust Logic (The Brain):**
-    * Implementasi `TrustService`.
-    * Logic perhitungan TTI & LRS.
-3.  **Event Listeners:**
-    * Bind event `PAYMENT_PAID` -> Trigger `PAYMENT_ON_TIME` (+Skor).
-    * Bind event `PAYMENT_LATE` -> Trigger `PAYMENT_LATE` (-Skor).
-4.  **Logs API:**
-    * Endpoint untuk melihat history skor (untuk Grafik Dashboard UI).
-
-**Definition of Done:**
-* User harus KYC dulu baru bisa booking.
-* Skor TTI naik otomatis saat simulasi bayar sukses.
-* Skor LRS turun otomatis jika ada report sengketa.
+- [ ] **Reference Data API**
+    - [ ] `GET /references/attributes`: Fetch dynamic form inputs (Bedroom, Amenities list) for Frontend.
+- [ ] **Property Management (Landlord)**
+    - [ ] `POST /properties`: Create listing with EAV Attributes (`{ attributes: [{ id: 1, value: "3" }] }`).
+    - [ ] **Storage Integration:** Upload multiple Property Images (**Public Bucket**).
+    - [ ] `PUT /properties/:id`: Update listing & attributes.
+    - [ ] `DELETE /properties/:id`: Soft delete implementation.
+- [ ] **Marketplace Search (Tenant)**
+    - [ ] `GET /properties`: Public list with Pagination & Sorting.
+    - [ ] Implement Filters: City, Price Range, Property Type.
+    - [ ] `GET /properties/:id`: Detail view with full specs & Landlord info.
+- [ ] **Favorites**
+    - [ ] `POST /favorites/:propertyId`: Add/Remove from wishlist.
 
 ---
 
-### 📅 Phase 5: Chat & Final Polish (Minggu 5)
-**Fokus:** Interaksi user dan kestabilan sistem.
+## 💸 Phase 3: Transaction & Payment System (Week 3)
+**Goal:** Handle money securely using Midtrans and manage recurring billing cycles.
 
-**Tasks:**
-1.  **Chat Module:**
-    * Setup Socket.io.
-    * API `GET /chat/rooms` dan `GET /chat/messages`.
-2.  **Response Time Analytics:**
-    * Logic menghitung selisih waktu balas chat Landlord.
-    * Update LRS Score berdasarkan kecepatan balas.
-3.  **Security & Optimization:**
-    * Cek Rate Limiting.
-    * Cek Indexing Database (Explain Analyze query berat).
-4.  **Deployment:**
-    * Push Docker Image ke Registry (jika ada).
-    * Final Test di environment Staging/Prod.
-
-**Definition of Done:**
-* Chat real-time berfungsi.
-* Semua endpoint terdocumentasi di Swagger.
-* Tidak ada error di logs Winston.
+- [ ] **Booking Logic**
+    - [ ] `POST /bookings`: Create booking request (Check availability).
+    - [ ] **Validation:** Ensure User != Landlord of the property.
+- [ ] **Payment Gateway (Midtrans)**
+    - [ ] Service: Generate Snap Token & Redirect URL.
+    - [ ] `POST /webhooks/midtrans`: Handle notifications (Update Invoice `PAID` -> Update Booking `ACTIVE`).
+    - [ ] Idempotency Check: Prevent double processing of webhooks.
+- [ ] **Recurring Billing (Scheduler)**
+    - [ ] Setup `node-cron` worker (Runs daily at 00:00).
+    - [ ] Logic: Find active bookings approaching `nextPaymentDate` (H-7).
+    - [ ] Action: Auto-generate Invoice & Send Notification (Email/Push).
 
 ---
 
-### 🚀 Prioritas Pengerjaan (Critical Path)
+## 🛡️ Phase 4: Trust Engine & Safety (Week 4)
+**Goal:** The core value proposition. Verify identities and calculate Trust Scores.
 
-Jika waktu mepet, kerjakan urutan ini dan abaikan sisanya:
-1.  **Auth** (Tanpa ini tidak ada user).
-2.  **Rental** (Tanpa ini tidak ada produk).
-3.  **Booking/Payment** (Tanpa ini tidak ada bisnis).
-4.  **Trust Score** (Tanpa ini tidak sesuai dokumen tantangan).
-5.  *Chat* (Bisa ditunda/dihapus).
-6.  *Recurring Scheduler* (Bisa manual trigger dulu).
+- [ ] **KYC System (Know Your Customer)**
+    - [ ] **Storage Integration:** Upload KTP & Selfie (**Private Bucket**).
+    - [ ] `POST /trust/kyc`: Submit documents.
+    - [ ] `POST /admin/kyc/approve`: Admin verification logic.
+    - [ ] Middleware: `requireVerified` (Block booking if KYC pending).
+- [ ] **Trust Scoring Logic**
+    - [ ] Service: `TrustService` with dynamic point configuration from DB.
+    - [ ] Listener: On `PAYMENT_PAID_ON_TIME` -> TTI Score ++.
+    - [ ] Listener: On `PAYMENT_LATE` -> TTI Score --.
+    - [ ] Listener: On `DISPUTE_LOST` -> LRS Score --.
+- [ ] **Trust Dashboard API**
+    - [ ] `GET /trust/my-score`: Current Score & Status.
+    - [ ] `GET /trust/logs`: History of score changes (for Line Chart).
+
+---
+
+## 💬 Phase 5: Communication & Final Polish (Week 5)
+**Goal:** Real-time interaction and system hardening.
+
+- [ ] **Chat Module**
+    - [ ] Setup Socket.io Server (with Redis Adapter for scaling).
+    - [ ] `POST /chat/room`: Initiate chat from Property page.
+    - [ ] `GET /chat/messages`: Load history with pagination.
+- [ ] **Response Time Analytics**
+    - [ ] Logic: Calculate delta between Tenant Message & Landlord Reply.
+    - [ ] Event: Update LRS "Response Rate" score based on speed.
+- [ ] **Optimization & Testing**
+    - [ ] Database Indexing audit (`EXPLAIN ANALYZE`).
+    - [ ] API Load Testing (k6 or Apache Benchmark).
+    - [ ] Final Security Audit (Headers, Input Validation, Presigned URLs).
+
+---
+
+## 📦 Future Considerations (Post-MVP)
+- [ ] **Sales Module:** Buying/Selling properties.
+- [ ] **Review System:** Manual text reviews (Subjective data).
+- [ ] **Notification Service:** Email (SendGrid) & Push Notifications (FCM).
+- [ ] **Testing:** Unit Tests (Jest) & Integration Tests.
