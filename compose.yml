@@ -1,0 +1,81 @@
+services:
+  # ------------------------------------
+  # APPLICATION (Base Definition)
+  # ------------------------------------
+  api:
+    container_name: rentverse_api
+    # Wait for infrastructure to be fully ready
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      minio_storage:
+        condition: service_started
+    networks:
+      - rentverse-net
+
+  # ------------------------------------
+  # INFRASTRUCTURE SERVICES
+  # ------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: rentverse_db
+    restart: always
+    environment:
+      POSTGRES_USER: rentverse
+      POSTGRES_PASSWORD: supersecurepassword
+      POSTGRES_DB: rentverse_db
+    ports:
+      - "5432:5432" # Exposed for local DB tools (DBeaver/TablePlus)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - rentverse-net
+    # Healthcheck to prevent API from connecting too early
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rentverse -d rentverse_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: redis:alpine
+    container_name: rentverse_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - rentverse-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio_storage:
+    image: minio/minio:latest
+    container_name: rentverse_storage
+    restart: always
+    ports:
+      - "9000:9000" # API Port
+      - "9001:9001" # Console Port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: miniosecretpassword
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - rentverse-net
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+networks:
+  rentverse-net:
+    driver: bridge

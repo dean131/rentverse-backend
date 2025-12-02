@@ -1,83 +1,81 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// =========================================================
+// RENTVERSE DATABASE SCHEMA (FINAL v3.3 - FIXED)
+// =========================================================
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../src/shared/prisma-client"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-
 // =========================================================
 // 1. MODULE: IDENTITY & ACCESS (RBAC + User Profile)
 // =========================================================
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  name          String?  // UI: Nama User
-  password      String
-  avatarUrl     String?  // UI: Foto Profil Public
-  isVerified    Boolean  @default(false) // UI: Badge Verified User
-  
-  // [OPTIMIZATION] JSONB untuk data tambahan fleksibel (No HP, Sosmed, Preferences)
-  metadata      Json?    
+  id              String    @id @default(uuid())
+  email           String    @unique
+  emailVerifiedAt DateTime? // Email Verification Timestamp
 
-  // Relasi RBAC
-  roles         UserRole[]
+  phone           String?   @unique // WhatsApp/Phone
+  phoneVerifiedAt DateTime? // Phone Verification Timestamp
 
-  // Relasi Profil Trust (One-to-One)
+  name            String?
+  password        String
+  avatarUrl       String?
+  isVerified      Boolean   @default(false) // General Verification Flag
+
+  // Flexible Metadata (Preferences, Social Links, etc.)
+  metadata        Json?
+
+  // Relations
+  roles           UserRole[]
   tenantProfile   TenantTrustProfile?
   landlordProfile LandlordTrustProfile?
+  favorites       UserFavorite[]
+  tenantChats     ChatRoom[]            @relation("TenantChats")
+  landlordChats   ChatRoom[]            @relation("LandlordChats")
   
-  // Relasi Fitur
-  favorites     UserFavorite[]
-  tenantChats   ChatRoom[] @relation("TenantChats")
-  landlordChats ChatRoom[] @relation("LandlordChats")
+  // [FIXED] Added opposite relation field for Booking
+  bookings        Booking[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // [OPTIMIZATION] Soft Delete
-  deletedAt     DateTime? 
-  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // Soft Delete
+
   @@map("users")
-  @@index([email]) // Login speedup
+  @@index([email])
+  @@index([phone])
 }
 
 model Role {
-  id          String   @id @default(uuid())
-  name        String   @unique // "TENANT", "LANDLORD", "ADMIN"
+  id          String           @id @default(uuid())
+  name        String           @unique // "TENANT", "LANDLORD", "ADMIN"
   description String?
-  
   users       UserRole[]
   permissions RolePermission[]
-  
+
   @@map("roles")
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  action      String   @unique // "trust.score.update", "property.create"
+  id          String           @id @default(uuid())
+  action      String           @unique // "trust.score.update", "property.create"
   description String?
-  
   roles       RolePermission[]
-  
+
   @@map("permissions")
 }
 
 model UserRole {
   userId String
   roleId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
   @@id([userId, roleId])
   @@map("user_roles")
 }
@@ -87,124 +85,141 @@ model RolePermission {
   permissionId String
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  
+
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
 
 // =========================================================
-// 2. MODULE: RENTAL & MARKETPLACE (Normalized)
+// 2. MODULE: RENTAL & MARKETPLACE (Normalized EAV)
 // =========================================================
 
-// Reference Table: Tipe Properti (Apartment, House, dll)
+// Master Data: Property Types (Apartment, House, etc)
 model PropertyType {
-  id          Int        @id @default(autoincrement())
-  slug        String     @unique 
-  label       String     
-  properties  Property[]
+  id         Int        @id @default(autoincrement())
+  slug       String     @unique
+  label      String
+  properties Property[]
+
   @@map("ref_property_types")
 }
 
-// Reference Table: Tipe Listing (Rent, Sale)
+// Master Data: Listing Types (Rent, Sale)
 model ListingType {
-  id          Int        @id @default(autoincrement())
-  slug        String     @unique 
-  label       String     
-  properties  Property[]
+  id         Int        @id @default(autoincrement())
+  slug       String     @unique
+  label      String
+  properties Property[]
+
   @@map("ref_listing_types")
 }
 
-// Reference Table: Periode Bayar (Monthly, Yearly)
+// Master Data: Billing Periods (Monthly, Yearly)
 model BillingPeriod {
-  id              Int      @id @default(autoincrement())
-  slug            String   @unique 
-  label           String   
-  durationMonths  Int      // Logic helper (1, 3, 12)
-  
-  bookings        Booking[]
-  properties      PropertyBillingPeriod[] 
-  
+  id             Int                     @id @default(autoincrement())
+  slug           String                  @unique
+  label          String
+  durationMonths Int // Logic helper (1, 3, 12)
+  bookings       Booking[]
+  properties     PropertyBillingPeriod[]
+
   @@map("ref_billing_periods")
 }
 
+// --- DYNAMIC ATTRIBUTES ENGINE (EAV) ---
+
+// Master Data: Attribute Definitions (Bedroom, Bathroom, Garage)
+model PropertyAttributeType {
+  id       Int                 @id @default(autoincrement())
+  slug     String              @unique // "bedroom", "bathroom", "area"
+  label    String // "Bedroom", "Building Area"
+  dataType String // "NUMBER", "STRING", "BOOLEAN"
+  iconUrl  String? // Icon URL for UI
+  values   PropertyAttribute[]
+
+  @@map("ref_property_attribute_types")
+}
+
+// Transaction: Attribute Values per Property
+model PropertyAttribute {
+  id              String                @id @default(uuid())
+  propertyId      String
+  property        Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  attributeTypeId Int
+  attributeType   PropertyAttributeType @relation(fields: [attributeTypeId], references: [id])
+  value           String // Stored as string, parsed by app logic
+
+  @@unique([propertyId, attributeTypeId]) // One value per attribute type per property
+  @@map("property_attributes")
+}
+
+// --- CORE PROPERTY TABLE ---
+
 model Property {
-  id            String      @id @default(uuid())
-  landlordId    String
-  // Note: Bisa tambah relasi ke User landlord jika butuh query direct
-  
-  // General Info
-  title         String
-  description   String?     @db.Text
-  
-  // Specs (UI Requirement)
+  id          String  @id @default(uuid())
+  landlordId  String
+  title       String
+  description String? @db.Text
+
+  // Categorization
   propertyTypeId Int
   propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
-  
-  bedrooms      Int        @default(1)
-  bathrooms     Int        @default(1)
-  area          Float      
-  areaUnit      String     @default("sqft") 
-  amenities     String[]   @default([]) // ["WIFI", "POOL", "KITCHEN"]
-  
-  // Location (Map Requirement)
-  address       String
-  city          String
-  country       String
-  latitude      Float?
-  longitude     Float?
+
+  // Attributes (EAV Relation)
+  attributes PropertyAttribute[]
+
+  amenities String[] @default([]) // Simple tags: ["WIFI", "POOL"]
+
+  // Location
+  address   String
+  city      String
+  country   String
+  latitude  Float?
+  longitude Float?
 
   // Financials
   listingTypeId Int
   listingType   ListingType @relation(fields: [listingTypeId], references: [id])
-
   price         Decimal     @db.Decimal(15, 2)
   currency      String      @default("IDR")
   isVerified    Boolean     @default(false)
-  
-  // [OPTIMIZATION] Metadata untuk spek unik masa depan
-  metadata      Json?
 
-  // Configuration (Many-to-Many via Pivot)
-  allowedBillingPeriods PropertyBillingPeriod[] 
+  metadata Json? // Extra config
 
   // Relations
-  images        PropertyImage[]
-  bookings      Booking[]
-  chatRooms     ChatRoom[]
-  favoritedBy   UserFavorite[]
+  allowedBillingPeriods PropertyBillingPeriod[]
+  images                PropertyImage[]
+  bookings              Booking[]
+  chatRooms             ChatRoom[]
+  favoritedBy           UserFavorite[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // [OPTIMIZATION] Soft Delete
-  deletedAt     DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
 
-  // Indexes
-  @@index([city])      
-  @@index([price])     
+  @@index([city])
+  @@index([price])
   @@index([landlordId])
-  @@index([deletedAt]) // Cepat filter data aktif
+  @@index([deletedAt])
   @@map("properties")
 }
 
 model PropertyBillingPeriod {
   propertyId      String
   billingPeriodId Int
-  
   property        Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   billingPeriod   BillingPeriod @relation(fields: [billingPeriodId], references: [id], onDelete: Cascade)
-  
+
   @@id([propertyId, billingPeriodId])
   @@map("property_billing_periods")
 }
 
 model PropertyImage {
-  id          String   @id @default(uuid())
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
-  url         String   // Public URL
-  isPrimary   Boolean  @default(false)
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String   // Public URL
+  isPrimary  Boolean  @default(false)
 
   @@map("property_images")
 }
@@ -215,11 +230,10 @@ model UserFavorite {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
   createdAt  DateTime @default(now())
 
-  @@unique([userId, propertyId]) 
-  @@index([userId]) // Cepat load wishlist user
+  @@unique([userId, propertyId])
+  @@index([userId])
   @@map("user_favorites")
 }
 
@@ -228,53 +242,48 @@ model UserFavorite {
 // =========================================================
 
 model Booking {
-  id              String   @id @default(uuid())
-  propertyId      String
-  property        Property @relation(fields: [propertyId], references: [id])
-  tenantId        String
-  
-  // Normalized Billing Period Selection
+  id         String @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  tenantId   String
+  tenant     User     @relation(fields: [tenantId], references: [id])
+
   billingPeriodId Int
   billingPeriod   BillingPeriod @relation(fields: [billingPeriodId], references: [id])
-  
+
   startDate       DateTime
-  endDate         DateTime? 
-  nextPaymentDate DateTime 
-  status          String   // ACTIVE, CANCELLED, COMPLETED, PENDING_PAYMENT
+  endDate         DateTime?
+  nextPaymentDate DateTime
+  status          String // ACTIVE, CANCELLED, COMPLETED, PENDING_PAYMENT
 
-  invoices        Invoice[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // [OPTIMIZATION] Soft Delete
-  deletedAt       DateTime?
+  invoices Invoice[]
 
-  @@index([tenantId])   
-  @@index([propertyId]) 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId])
+  @@index([propertyId])
   @@map("bookings")
 }
 
 model Invoice {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   bookingId       String
-  booking         Booking  @relation(fields: [bookingId], references: [id])
-  
-  amount          Decimal  @db.Decimal(15, 2)
+  booking         Booking   @relation(fields: [bookingId], references: [id])
+  amount          Decimal   @db.Decimal(15, 2)
   dueDate         DateTime
-  paidAt          DateTime? 
+  paidAt          DateTime?
   status          String    // PENDING, PAID, OVERDUE, CANCELLED
-  
-  // Midtrans Data
-  paymentLink     String?   
+  paymentLink     String?
   snapToken       String?
   midtransOrderId String?   @unique
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([bookingId])
-  @@index([status]) 
+  @@index([status])
   @@map("invoices")
 }
 
@@ -284,13 +293,12 @@ model Invoice {
 
 model TrustEvent {
   id          String   @id @default(uuid())
-  code        String   @unique 
-  category    String   
-  role        String   
-  baseImpact  Float    
-  description String?  
-  isActive    Boolean  @default(true) 
-  
+  code        String   @unique
+  category    String
+  role        String
+  baseImpact  Float
+  description String?
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -298,58 +306,60 @@ model TrustEvent {
 }
 
 model TenantTrustProfile {
-  id             String   @id @default(uuid())
-  userRefId      String   @unique
-  user           User     @relation(fields: [userRefId], references: [id])
-  
-  tti_score      Float    @default(50.0) 
-  
-  // KYC / Identity Verification
-  kyc_status     String   @default("PENDING") // PENDING, SUBMITTED, VERIFIED, REJECTED
-  ktpUrl         String?  // Private URL
-  selfieUrl      String?  // Private URL
-  
-  payment_faults Int      @default(0)    
-  
-  logs           TrustLog[]
-  
+  id        String @id @default(uuid())
+  userRefId String @unique
+  user      User   @relation(fields: [userRefId], references: [id])
+  tti_score Float  @default(50.0)
+
+  // KYC Fields
+  kyc_status    String    @default("PENDING") // PENDING, SUBMITTED, VERIFIED, REJECTED
+  ktpUrl        String?   // Private URL
+  ktpVerifiedAt DateTime? // KTP Verified Timestamp
+  selfieUrl     String?   // Private URL
+
+  payment_faults Int @default(0)
+
+  logs TrustLog[]
+
   @@map("tenant_profiles")
 }
 
 model LandlordTrustProfile {
-  id             String   @id @default(uuid())
-  userRefId      String   @unique
-  user           User     @relation(fields: [userRefId], references: [id])
-  
-  lrs_score      Float    @default(50.0) 
-  response_rate  Float    @default(0.0)  
-  
-  logs           TrustLog[]
-  
+  id            String @id @default(uuid())
+  userRefId     String @unique
+  user          User   @relation(fields: [userRefId], references: [id])
+  lrs_score     Float  @default(50.0)
+  response_rate Float  @default(0.0) // Minutes
+
+  // KYC Fields (Optional but recommended for Landlords)
+  kyc_status    String    @default("PENDING")
+  ktpUrl        String?
+  ktpVerifiedAt DateTime? // KTP Verified Timestamp
+
+  logs TrustLog[]
+
   @@map("landlord_profiles")
 }
 
 model TrustLog {
-  id          String   @id @default(uuid())
-  
-  eventCode   String   
-  impact      Float    
-  scoreSnap   Float    
+  id          String  @id @default(uuid())
+  eventCode   String
+  impact      Float
+  scoreSnap   Float
   description String?
   evidenceUrl String? // Private URL
-  
-  // Ownership (Explicit Nullable FK)
-  tenantId    String?
-  tenant      TenantTrustProfile? @relation(fields: [tenantId], references: [id])
-  
-  landlordId  String?
-  landlord    LandlordTrustProfile? @relation(fields: [landlordId], references: [id])
 
-  createdAt   DateTime @default(now())
-  
+  // Polymorphic Foreign Keys
+  tenantId   String?
+  tenant     TenantTrustProfile?   @relation(fields: [tenantId], references: [id])
+  landlordId String?
+  landlord   LandlordTrustProfile? @relation(fields: [landlordId], references: [id])
+
+  createdAt DateTime @default(now())
+
   @@index([tenantId])
   @@index([landlordId])
-  @@index([createdAt]) 
+  @@index([createdAt])
   @@map("trust_logs")
 }
 
@@ -358,40 +368,33 @@ model TrustLog {
 // =========================================================
 
 model ChatRoom {
-  id          String   @id @default(uuid())
-  
-  propertyId  String?  
-  property    Property? @relation(fields: [propertyId], references: [id])
+  id            String        @id @default(uuid())
+  propertyId    String?
+  property      Property?     @relation(fields: [propertyId], references: [id])
+  tenantId      String
+  landlordId    String
+  tenant        User          @relation("TenantChats", fields: [tenantId], references: [id])
+  landlord      User          @relation("LandlordChats", fields: [landlordId], references: [id])
+  messages      ChatMessage[]
+  lastMessageAt DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  tenantId    String
-  landlordId  String
-  tenant      User @relation("TenantChats", fields: [tenantId], references: [id])
-  landlord    User @relation("LandlordChats", fields: [landlordId], references: [id])
-
-  messages    ChatMessage[]
-
-  lastMessageAt DateTime @default(now()) 
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt 
-  
   @@index([tenantId])
   @@index([landlordId])
-  @@index([lastMessageAt]) 
+  @@index([lastMessageAt])
   @@map("chat_rooms")
 }
 
 model ChatMessage {
-  id          String   @id @default(uuid())
-  roomId      String
-  room        ChatRoom @relation(fields: [roomId], references: [id])
+  id        String   @id @default(uuid())
+  roomId    String
+  room      ChatRoom @relation(fields: [roomId], references: [id])
+  senderId  String
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  senderId    String   
-  content     String   @db.Text
-  isRead      Boolean  @default(false)
-  
-  createdAt   DateTime @default(now()) 
-  
   @@index([roomId])
   @@index([createdAt])
   @@map("chat_messages")

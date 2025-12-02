@@ -1,39 +1,39 @@
 # Rentverse - Smart Rental Trust Dashboard & Marketplace
 
-**Rentverse** is an end-to-end property rental ecosystem integrating a Marketplace, Payment Gateway (Midtrans), and a sophisticated Trust Analysis System.
+**Rentverse** is an enterprise-grade property rental ecosystem integrating a dynamic Marketplace, Escrow Payment System (Midtrans), and a sophisticated Trust Analysis Engine.
 
 It utilizes the **Tenant Trust Index (TTI)** and **Landlord Reliability Score (LRS)** algorithms to automatically assess risk based on user behavioral data, financial transactions, and interaction history.
 
-> **Environment Note:** This project is built on **Node.js 24 LTS** and **TypeScript** (NodeNext) to ensure high performance, type safety, and modern standard compliance.
+> **Environment Note:** This project is engineered on **Node.js 24 LTS** and **TypeScript** (NodeNext) to ensure bleeding-edge performance, strict type safety, and long-term maintainability.
 
 ## 🚀 Tech Stack
 
   * **Language:** TypeScript 5.x (Strict Mode)
   * **Runtime:** Node.js 24 LTS
-  * **Architecture:** Modular Monolith (Domain-Driven Design)
+  * **Architecture:** Modular Monolith (Controller-Service-Repository Pattern)
   * **Database:** PostgreSQL 15
-  * **ORM:** Prisma (with EAV Pattern Support)
+  * **ORM:** Prisma v7 (with EAV Pattern & Custom Output)
   * **Caching & Queue:** Redis
   * **Object Storage:** MinIO (S3 Compatible - Hybrid Public/Private)
   * **Validation:** Zod
-  * **Logging:** Winston
+  * **Logging:** Winston (Structured JSON)
   * **Docs:** Swagger (OpenAPI 3.0)
-  * **Infrastructure:** Docker & Docker Compose
+  * **Infrastructure:** Docker & Docker Compose (Multi-stage builds)
 
 ## 🌟 Key Features
 
 1.  **Dynamic Property Specs (EAV Pattern):** Property attributes (e.g., Bedrooms, Bathrooms, Amenities) are fully dynamic. New specifications can be added via database seeding without altering the schema (`ALTER TABLE`).
-2.  **Trust Scoring Engine:** Automated scoring system updates TTI & LRS in real-time based on payment behavior and verified complaints.
-3.  **Secure KYC:** Identity verification system with private storage for sensitive documents (KTP/Selfie).
-4.  **Database-Driven RBAC:** Granular permission management stored in the database, cached in Redis for performance.
-5.  **Audit Ready:** Implements **Soft Delete** and **Immutable Logs** for data integrity.
+2.  **Trust Scoring Engine:** Automated scoring system updates TTI & LRS in real-time based on payment behavior, verified complaints, and chat response analytics.
+3.  **Escrow Finance System:** Built-in **Wallet & Payout** module. Rent payments are held in a digital ledger before being withdrawn by landlords, ensuring platform fees are collected and fraud is minimized.
+4.  **Secure KYC:** Identity verification system with private storage for sensitive documents (ID Cards/Selfies), utilizing signed URLs for access.
+5.  **Database-Driven RBAC:** Granular permission management stored in the database and cached in Redis for high-performance authorization.
 
 ## 🛠️ Prerequisites
 
 Ensure you have the following tools installed:
 
-  * [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Required)
-  * [Node.js v24+](https://nodejs.org/) (Recommended for local tooling)
+  * [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Required for infrastructure)
+  * [Node.js v24+](https://nodejs.org/) (Recommended for local tooling/intellisense)
 
 ## ⚡ Quick Start
 
@@ -55,27 +55,27 @@ Copy `.env.example` to `.env`.
 cp .env.example .env
 ```
 
-*Ensure the configurations match `docker-compose.yml`.*
+*Ensure the configurations match `compose.yml`.*
 
 ### 3\. Start Infrastructure
 
-Run Docker Compose to spin up the containers.
+Run Docker Compose to spin up the containers in development mode (Hot-Reload enabled).
 
 ```bash
-docker-compose up -d --build
+npm run docker:dev
 ```
 
 *Wait until all containers are in `healthy` state.*
 
 ### 4\. Database Setup (CRITICAL STEP)
 
-⚠️ **IMPORTANT:** Because we use the **EAV Pattern** for property attributes, the application relies on Reference Data to function. You **MUST** run the seeder, otherwise, features like "Create Property" will fail.
+⚠️ **IMPORTANT:** Because we use the **EAV Pattern**, **RBAC**, and **Normalized Tables**, the application relies on Reference Data to function. You **MUST** run the seeder immediately after the first deployment.
 
 ```bash
 # 1. Push Schema to DB
-npx prisma db push
+npm run db:push
 
-# 2. Seed Master Data (Attributes, Roles, Events, Admin)
+# 2. Seed Master Data (Attributes, Roles, Events, Billing Periods, Admin)
 npm run db:seed
 ```
 
@@ -85,7 +85,7 @@ The server is now running at `http://localhost:3000`.
 
 ## 📂 Project Structure
 
-We follow a **Modular Monolith** architecture. Code is organized by **Business Domain**.
+We follow a **Modular Monolith** architecture organized by **Business Domain**.
 
 ```text
 src/
@@ -95,10 +95,14 @@ src/
 ├── modules/             # BUSINESS LOGIC MODULES
 │   ├── auth/            # Login, Register, RBAC, KYC
 │   ├── rental/          # Property Listing (EAV Logic), Booking
+│   ├── finance/         # Wallet, Payouts, Bank Accounts
 │   ├── payment/         # Midtrans Integration, Invoicing, Scheduler
 │   ├── trust/           # Scoring Logic, Trust Logs
 │   └── chat/            # Real-time Chat & Response Time Analysis
-├── shared/              # Shared Services (StorageService, EventBus)
+├── shared/              # Shared Layer
+│   ├── prisma-client/   # Generated Prisma Client (Custom Output)
+│   ├── services/        # Infrastructure Services (Storage, Email)
+│   └── utils/           # Helpers (AppError, ResponseHelper)
 ├── app.ts               # Express App Setup
 └── server.ts            # Server Entry Point
 ```
@@ -115,31 +119,40 @@ src/
       * Email: `admin@rentverse.com`
       * Password: `admin123` *(Created during seeding)*
 
-## 🛡️ Coding Standards
+## 🛡️ Coding Standards & Patterns
 
-### 1\. Type Safety
+### 1\. Controller-Service-Repository (CSR)
 
-  * Do not use `any`. Use interfaces/DTOs.
-  * Use Prisma generated types for database results.
+We strictly separate concerns:
 
-### 2\. Error Handling
+  * **Controller:** Handles HTTP requests, validation, and responses.
+  * **Service:** Contains business logic, calculations, and transaction management.
+  * **Repository:** Handles direct database queries via Prisma.
+
+### 2\. Type Safety
+
+  * Do not use `any`. Use interfaces/DTOs defined in the module.
+  * Use Prisma generated types for database entities.
+
+### 3\. Error Handling
 
 Never use `try-catch` blocks in Controllers. Use the `catchAsync` wrapper to delegate errors to the Global Error Handler.
 
 ```typescript
-const getScore = catchAsync(async (req: Request, res: Response) => {
-  // Your logic here
+const register = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.register(req.body);
+  return sendSuccess(res, result);
 });
 ```
 
-### 3\. Validation
+### 4\. Validation
 
-All request inputs (`req.body`, `req.query`) **MUST** be validated using **Zod** schemas.
+All request inputs (`req.body`, `req.query`) **MUST** be validated using **Zod** schemas via the validation middleware.
 
-### 4\. Storage Strategy (Hybrid)
+### 5\. Storage Strategy (Hybrid)
 
   * **Public (`isPublic: true`):** Property Photos, Avatars. Accessible via direct URL.
-  * **Private (`isPublic: false`):** ID Cards, Contracts, Evidence. Accessible only via pre-signed URLs generated by backend.
+  * **Private (`isPublic: false`):** ID Cards, Contracts, Evidence. Accessible only via pre-signed URLs generated by the backend.
 
 ## 📝 Environment Variables Reference
 

@@ -1,0 +1,30 @@
+import { z } from "zod";
+
+/**
+ * Schema for User Registration.
+ * Enforces strong password policies and valid role selection.
+ */
+export const registerSchema = z.object({
+  email: z.string().email("Invalid email address format"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .max(100, "Password is too long"),
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  phone: z.string().min(10, "Phone number must be valid").optional(),
+  role: z.enum(["TENANT", "LANDLORD"], {
+    message: "Role must be either 'TENANT' or 'LANDLORD'",
+  }),
+});
+
+/**
+ * Schema for User Login.
+ */
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+});
+
+// Type inference for usage in Services/Controllers
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
