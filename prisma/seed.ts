@@ -1,5 +1,8 @@
+// type: uploaded file
+// fileName: rentverse-backend/prisma/seeds/seed.ts
+
 // NOTE: We import from the CUSTOM GENERATED PATH defined in schema.prisma
-import { PrismaClient } from "../../src/shared/prisma-client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -101,35 +104,96 @@ async function seedReferences() {
   }
 }
 
+async function seedPermissions() {
+  console.log("🔐 Seeding Permissions...");
+
+  const permissions = [
+    { action: "trust.score.update", description: "Update trust scores manually" },
+    { action: "property.create", description: "Create new properties" },
+    { action: "property.update", description: "Update existing properties" },
+    { action: "property.delete", description: "Delete properties" },
+    { action: "user.verify", description: "Verify user KYC" },
+    { action: "system.config", description: "Manage system configurations" },
+  ];
+
+  for (const p of permissions) {
+    await prisma.permission.upsert({
+      where: { action: p.action },
+      update: {},
+      create: p,
+    });
+  }
+}
+
 async function seedRolesAndAdmin() {
   console.log("🛡️ Seeding Roles & Admin...");
 
   // 1. Roles
   const roles = ["TENANT", "LANDLORD", "ADMIN"];
+  const roleRecords: Record<string, any> = {};
+
   for (const r of roles) {
-    await prisma.role.upsert({
+    const role = await prisma.role.upsert({
       where: { name: r },
       update: {},
       create: { name: r },
     });
+    roleRecords[r] = role;
   }
 
-  // 2. Super Admin
-  const adminRole = await prisma.role.findUnique({ where: { name: "ADMIN" } });
-  if (adminRole) {
-    const hashedPassword = await bcrypt.hash("admin123", 10);
-    await prisma.user.upsert({
-      where: { email: "admin@rentverse.com" },
+  // 2. Map Permissions to ADMIN Role
+  const allPermissions = await prisma.permission.findMany();
+  const adminRole = roleRecords["ADMIN"];
+
+  for (const perm of allPermissions) {
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: adminRole.id,
+          permissionId: perm.id,
+        },
+      },
       update: {},
       create: {
-        email: "admin@rentverse.com",
-        password: hashedPassword,
-        name: "Super Admin",
-        isVerified: true,
-        roles: { create: [{ roleId: adminRole.id }] },
+        roleId: adminRole.id,
+        permissionId: perm.id,
       },
     });
   }
+
+  // 3. Super Admin User
+  const hashedPassword = await bcrypt.hash("admin123", 10);
+  
+  const adminUser = await prisma.user.upsert({
+    where: { email: "admin@rentverse.com" },
+    update: {
+      password: hashedPassword, // Ensure password is updated if changed
+      isVerified: true,
+    },
+    create: {
+      email: "admin@rentverse.com",
+      password: hashedPassword,
+      name: "Super Admin",
+      isVerified: true,
+    },
+  });
+
+  // Ensure Admin has the ADMIN role
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: adminUser.id,
+        roleId: adminRole.id,
+      },
+    },
+    update: {},
+    create: {
+      userId: adminUser.id,
+      roleId: adminRole.id,
+    },
+  });
+
+  console.log("   > Admin user ready: admin@rentverse.com / admin123");
 }
 
 async function seedTrustEvents() {
@@ -141,48 +205,56 @@ async function seedTrustEvents() {
       category: "PAYMENT",
       role: "TENANT",
       baseImpact: -5.0,
+      description: "Tenant paid rent after the due date",
     },
     {
       code: "PAYMENT_ON_TIME",
       category: "PAYMENT",
       role: "TENANT",
       baseImpact: 2.0,
+      description: "Tenant paid rent on or before the due date",
     },
     {
       code: "COMM_FAST_RESPONSE",
       category: "COMMUNICATION",
       role: "LANDLORD",
       baseImpact: 3.0,
+      description: "Landlord responds to inquiries within 30 minutes",
     },
     {
       code: "FAKE_LISTING",
       category: "ACCURACY",
       role: "LANDLORD",
       baseImpact: -50.0,
+      description: "Landlord posted a verified fake listing",
     },
   ];
 
   for (const e of events) {
     await prisma.trustEvent.upsert({
       where: { code: e.code },
-      update: {},
+      update: {
+        description: e.description // Allow updating description
+      },
       create: e,
     });
   }
 }
 
 async function main() {
-  await seedReferences();
-  await seedRolesAndAdmin();
-  await seedTrustEvents();
-  console.log("✅ Seeding Completed.");
+  try {
+    await seedReferences();
+    await seedPermissions(); // New function
+    await seedRolesAndAdmin();
+    await seedTrustEvents();
+    
+    console.log("✅ Seeding Completed Successfully.");
+  } catch (e) {
+    console.error("❌ Seeding Failed:", e);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main();

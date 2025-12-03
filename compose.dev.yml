@@ -4,21 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: development # Targets the 'development' stage
-    environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - DATABASE_URL=postgresql://rentverse:supersecurepassword@db:5432/rentverse_db?schema=public
-      - REDIS_HOST=cache
-      - REDIS_PORT=6379
-      - MINIO_ENDPOINT=minio_storage
-      - MINIO_PORT=9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=miniosecretpassword
-      - STORAGE_PUBLIC_HOST=http://localhost:9000
-      # Secrets (Replace with real keys in .env)
-      - JWT_SECRET=rentverse_secret_key_2025
-      - MIDTRANS_SERVER_KEY=SB-Mid-server-xxxx
-      - MIDTRANS_CLIENT_KEY=SB-Mid-client-xxxx
+    env_file:
+      - .env
     ports:
       - "3000:3000"
       - "5555:5555" # Expose Prisma Studio for debugging

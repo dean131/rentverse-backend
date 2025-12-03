@@ -2,13 +2,14 @@
 // RENTVERSE DATABASE SCHEMA (FINAL v3.3 - FIXED)
 // =========================================================
 
+
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/shared/prisma-client"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // =========================================================
