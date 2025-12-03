@@ -1,15 +1,50 @@
-import { Prisma } from '../../shared/prisma-client/index.js';
+import { Prisma } from '@prisma/client';
 import prisma from '../../config/prisma.js';
 
 class AuthRepository {
   /**
-   * Find user by email, including their role details.
+   * Find user by email (for Login/Register checks)
    */
   async findUserByEmail(email: string) {
     return await prisma.user.findUnique({
       where: { email },
       include: {
-        roles: { include: { role: true } }, // Eager load role
+        roles: { include: { role: true } },
+      },
+    });
+  }
+
+  /**
+   * Find user by phone (for Register checks)
+   */
+  async findUserByPhone(phone: string) {
+    return await prisma.user.findUnique({
+      where: { phone },
+    });
+  }
+
+  /**
+   * Find user by ID (For Middleware/RBAC)
+   */
+  async findUserById(id: string) {
+    return await prisma.user.findUnique({
+      where: { id },
+      include: {
+        roles: { include: { role: true } },
+      },
+    });
+  }
+
+  /**
+   * [NEW] Find user by ID with full profiles (For 'Get Me' Endpoint)
+   */
+  async findUserByIdWithProfiles(id: string) {
+    return await prisma.user.findUnique({
+      where: { id },
+      include: {
+        roles: { include: { role: true } },
+        tenantProfile: true,
+        landlordProfile: true,
       },
     });
   }
@@ -31,10 +66,7 @@ class AuthRepository {
     roleId: string,
     roleName: 'TENANT' | 'LANDLORD'
   ) {
-    // 2. Tambahkan tipe ': Prisma.TransactionClient' pada parameter tx
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      
-      // Sekarang 'tx' memiliki intellisense lengkap (tx.user, tx.role, dll)
       const user = await tx.user.create({
         data: {
           ...userData,
