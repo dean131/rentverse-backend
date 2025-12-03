@@ -21,50 +21,6 @@ app.use(express.json({ limit: "10kb" }));
 
 /**
  * =====================================================================
- * 2. API DOCUMENTATION (Swagger/OpenAPI)
- * =====================================================================
- */
-const swaggerOptions = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "Rentverse API",
-      version: "1.0.0",
-      description: "Smart Rental Trust Dashboard & Marketplace API",
-      contact: {
-        name: "Rentverse DevOps Team",
-      },
-    },
-    servers: [
-      {
-        url: `http://localhost:${env.PORT}/api/v1`,
-        description: "Development Server",
-      },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
-      },
-    },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-  },
-  // Auto-discovery of documentation in route files
-  apis: ["./src/modules/**/*.routes.ts"],
-};
-
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-/**
- * =====================================================================
  * 3. ROUTE MOUNTING
  * =====================================================================
  */
