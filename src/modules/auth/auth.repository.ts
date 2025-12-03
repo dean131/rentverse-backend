@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import prisma from '../../config/prisma.js';
+import { Prisma } from "@prisma/client";
+import prisma from "../../config/prisma.js";
 
 class AuthRepository {
   /**
@@ -64,7 +64,7 @@ class AuthRepository {
   async createUserWithProfile(
     userData: Prisma.UserCreateInput,
     roleId: string,
-    roleName: 'TENANT' | 'LANDLORD'
+    roleName: "TENANT" | "LANDLORD"
   ) {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
@@ -76,17 +76,24 @@ class AuthRepository {
         },
       });
 
-      if (roleName === 'TENANT') {
+      if (roleName === "TENANT") {
         await tx.tenantTrustProfile.create({
           data: { userRefId: user.id, tti_score: 50.0 },
         });
-      } else if (roleName === 'LANDLORD') {
+      } else if (roleName === "LANDLORD") {
         await tx.landlordTrustProfile.create({
           data: { userRefId: user.id, lrs_score: 50.0 },
         });
       }
 
       return user;
+    });
+  }
+
+  async updateUser(userId: string, data: Prisma.UserUpdateInput) {
+    return await prisma.user.update({
+      where: { id: userId },
+      data,
     });
   }
 }

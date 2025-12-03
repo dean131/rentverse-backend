@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 import authRepository from "./auth.repository.js";
-import { RegisterInput, LoginInput } from "./auth.schema.js";
+import { RegisterInput, LoginInput, UpdateProfileInput } from "./auth.schema.js";
 
 class AuthService {
   /**
@@ -109,6 +109,31 @@ class AuthService {
 
     // Exclude sensitive data (password)
     const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileInput) {
+    // 1. If updating phone, check for uniqueness
+    if (input.phone) {
+      const existingUser = await authRepository.findUserByPhone(input.phone);
+
+      // If a user exists with this phone AND it's not the current user -> Conflict
+      if (existingUser && existingUser.id !== userId) {
+        throw new AppError(
+          "Phone number is already in use by another account",
+          409
+        );
+      }
+    }
+
+    // 2. Update Data
+    const updatedUser = await authRepository.updateUser(userId, {
+      name: input.name,
+      phone: input.phone,
+    });
+
+    // 3. Return result (exclude password)
+    const { password, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   }
 }

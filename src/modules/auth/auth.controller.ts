@@ -18,6 +18,11 @@ class AuthController {
     const result = await authService.getMe(req.user!.id);
     return sendSuccess(res, result, "User profile retrieved successfully");
   });
+
+  updateProfile = catchAsync(async (req: Request, res: Response) => {
+    const result = await authService.updateProfile(req.user!.id, req.body);
+    return sendSuccess(res, result, 'Profile updated successfully');
+  });
 }
 
 export default new AuthController();

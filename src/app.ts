@@ -1,8 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
-import swaggerUi from "swagger-ui-express";
-import swaggerJsDoc from "swagger-jsdoc";
+import rateLimit from 'express-rate-limit';
 
 import { env } from "./config/env.js";
 import errorHandler from "./middleware/error.middleware.js";
@@ -12,7 +11,7 @@ const app: Application = express();
 
 /**
  * =====================================================================
- * 1. GLOBAL MIDDLEWARES
+ * GLOBAL MIDDLEWARES
  * =====================================================================
  */
 app.use(helmet());
@@ -21,7 +20,24 @@ app.use(express.json({ limit: "10kb" }));
 
 /**
  * =====================================================================
- * 3. ROUTE MOUNTING
+ * RATE LIMITER
+ * =====================================================================
+ */
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, 
+	max: 100, 
+	standardHeaders: true, 
+	legacyHeaders: false, 
+    message: {
+        status: "fail",
+        message: "Too many requests from this IP, please try again after 15 minutes"
+    }
+});
+app.use('/api', limiter);
+
+/**
+ * =====================================================================
+ * ROUTE MOUNTING
  * =====================================================================
  */
 
@@ -49,7 +65,7 @@ app.use((req: Request, res: Response) => {
 
 /**
  * =====================================================================
- * 4. GLOBAL ERROR HANDLER
+ * GLOBAL ERROR HANDLER
  * =====================================================================
  */
 app.use(errorHandler);
