@@ -99,7 +99,6 @@ src/
 │   ├── trust/           # Scoring Logic, Trust Logs
 │   └── chat/            # Real-time Chat & Response Time Analysis
 ├── shared/              # Shared Layer
-│   ├── prisma-client/   # Generated Prisma Client (Custom Output)
 │   ├── services/        # Infrastructure Services (Storage, Email)
 │   └── utils/           # Helpers (AppError, ResponseHelper)
 ├── app.ts               # Express App Setup
