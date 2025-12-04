@@ -24,6 +24,7 @@ ENV NODE_ENV=development
 COPY prisma ./prisma
 COPY src ./src
 COPY tsconfig.json ./
+COPY nodemon.json ./
 
 # Generate Prisma Client (Output: src/shared/prisma-client)
 RUN npx prisma generate

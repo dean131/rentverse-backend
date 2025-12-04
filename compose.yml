@@ -60,11 +60,11 @@ services:
     container_name: rentverse_storage
     restart: always
     ports:
-      - "9000:9000" # API Port
-      - "9001:9001" # Console Port
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: miniosecretpassword
+      MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - miniodata:/data
     command: server /data --console-address ":9001"

@@ -6,6 +6,8 @@ import rateLimit from 'express-rate-limit';
 import { env } from "./config/env.js";
 import errorHandler from "./middleware/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import rentalRoutes from './modules/rental/rental.routes.js';
+import propertiesRoutes from './modules/rental/properties.routes.js';
 
 const app: Application = express();
 
@@ -53,9 +55,10 @@ app.get("/", (req: Request, res: Response) => {
 
 // Mount Business Modules
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/rental", rentalRoutes);
+app.use("/api/v1/properties", propertiesRoutes);
 
-// [FIX] Handle 404 - Not Found
-// Ganti app.all('*') dengan app.use() agar kompatibel dengan Express 5
+// Handle 404 - Not Found
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     status: "fail",

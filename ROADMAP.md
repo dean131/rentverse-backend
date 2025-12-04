@@ -27,7 +27,6 @@ It follows a **Modular Monolith** approach, prioritizing foundational stability 
   - [ ] Implement `Logger` (Winston).
   - [ ] Implement `AppError` & Global Error Handler.
   - [ ] Implement `ResponseHelper` (Standard JSON & Pagination).
-  - [ ] Setup `Swagger` base configuration.
 
 ---
 

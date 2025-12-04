@@ -19,8 +19,8 @@
     "db:seed": "node --loader ts-node/esm prisma/seed.ts",
     "db:studio": "prisma studio",
     "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up -d --build",
-    "docker:prod": "docker compose -f compose.yml -f compose.prod.yml up -d --build",
     "docker:dev-down": "docker compose -f compose.yml -f compose.dev.yml down",
+    "docker:prod": "docker compose -f compose.yml -f compose.prod.yml up -d --build",
     "docker:prod-down": "docker compose -f compose.yml -f compose.prod.yml down"
   },
   "keywords": [],
@@ -45,6 +45,7 @@
     "pg": "^8.16.3",
     "socket.io": "^4.8.1",
     "tsx": "^4.21.0",
+    "uuid": "^13.0.0",
     "winston": "^3.18.3",
     "zod": "^4.1.13"
   },
@@ -57,6 +58,7 @@
     "@types/node": "^24.10.1",
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.15.6",
+    "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.11",
     "prisma": "^4.15.0",
     "rimraf": "^6.1.2",

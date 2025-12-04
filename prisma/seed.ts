@@ -108,7 +108,10 @@ async function seedPermissions() {
   console.log("🔐 Seeding Permissions...");
 
   const permissions = [
-    { action: "trust.score.update", description: "Update trust scores manually" },
+    {
+      action: "trust.score.update",
+      description: "Update trust scores manually",
+    },
     { action: "property.create", description: "Create new properties" },
     { action: "property.update", description: "Update existing properties" },
     { action: "property.delete", description: "Delete properties" },
@@ -163,7 +166,7 @@ async function seedRolesAndAdmin() {
 
   // 3. Super Admin User
   const hashedPassword = await bcrypt.hash("admin123", 10);
-  
+
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@rentverse.com" },
     update: {
@@ -234,7 +237,7 @@ async function seedTrustEvents() {
     await prisma.trustEvent.upsert({
       where: { code: e.code },
       update: {
-        description: e.description // Allow updating description
+        description: e.description, // Allow updating description
       },
       create: e,
     });
@@ -247,7 +250,7 @@ async function main() {
     await seedPermissions(); // New function
     await seedRolesAndAdmin();
     await seedTrustEvents();
-    
+
     console.log("✅ Seeding Completed Successfully.");
   } catch (e) {
     console.error("❌ Seeding Failed:", e);
