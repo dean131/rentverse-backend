@@ -1,129 +1,119 @@
-# 🗺️ Rentverse Project Roadmap
+# 🗺️ Rentverse Project Roadmap (v2.1 - Mobile First + Notifications)
 
-This document outlines the development stages for the **Rentverse Backend API**.
-It follows a **Modular Monolith** approach, prioritizing foundational stability before moving to complex business logic.
-
-**Current Status:** 🚧 Phase 0 (Infrastructure Ready)
+**Core Shift:** Mobile-First for Users (Tenant/Landlord) | Web-Based for Admin Operations.
+**Focus:** Trust Engine Accuracy, Unified API, Push Notifications, and AI Readiness.
 
 ---
 
-## 🏁 Phase 0: Foundation & Infrastructure (Week 1 - Days 1-2)
+## 🏁 Phase 0: Foundation & Infrastructure (Week 1)
 
-**Goal:** Establish a stable development environment (`dev`) and ensure all systems (DB, Cache, Storage) are communicating.
+**Goal:** Establish a stable, containerized environment ready for mobile API consumption.
 
-- [ ] **Project Initialization**
-  - [x] Setup Node.js v24 LTS + TypeScript (Strict Mode).
-  - [x] Configure ESLint & Prettier.
-  - [x] Setup Modular Folder Structure (`src/modules/*`).
-- [ ] **Containerization (DevOps)**
-  - [x] Create `Dockerfile` (Multi-stage build).
-  - [x] Create `compose.yml` (App, Postgres 15, Redis, MinIO).
-  - [ ] Verify Healthchecks for all containers.
-- [ ] **Database & Seeding (CRITICAL)**
-  - [x] Define Prisma Schema v3.2 (EAV, Multi-role, Wallet, Indexes).
-  - [ ] Create `seed.ts` to populate Master Data (Attributes, Roles, BillingPeriods).
-  - [ ] Verify `npx prisma db push` works without errors.
-- [ ] **Core Utilities**
-  - [ ] Implement `Logger` (Winston).
-  - [ ] Implement `AppError` & Global Error Handler.
-  - [ ] Implement `ResponseHelper` (Standard JSON & Pagination).
+- [x] **Project Initialization**
+  - [x] Setup Node.js 24 + TS, ESLint, Prettier.
+  - [x] Configure Folder Structure (Modular Monolith).
+- [x] **Containerization**
+  - [x] Docker & Compose (App, Postgres 15, Redis, MinIO).
+  - [x] Healthchecks & Hot-Reload.
+- [x] **Database & Seeding**
+  - [x] Prisma Schema v6 (EAV Pattern, Trust Engine).
+  - [x] Initial Seeders (Roles, Attributes).
+- [ ] **Unified API Standard**
+  - [ ] Implement `ResponseHelper` for consistent JSON (Critical for Mobile parsing).
+  - [ ] Implement Global Error Handling (No silent failures).
 
 ---
 
-## 🔐 Phase 1: Identity & Access Management (Week 1 - Days 3-5)
+## 📱 Phase 1: Identity, Auth & Notifications (Week 2)
 
-**Goal:** Enable user registration, secure authentication, and role-based access.
+**Goal:** Secure mobile authentication and establishing the communication channel.
 
-- [ ] **Auth Module**
-  - [ ] `POST /auth/register`: Register as Tenant/Landlord (Auto-create Trust Profile & Wallet).
-  - [ ] `POST /auth/login`: Issue JWT Access Token.
-  - [ ] `GET /auth/me`: Get current user profile.
-- [ ] **RBAC & Security**
-  - [ ] Middleware: `verifyToken` (JWT Validation).
-  - [ ] Middleware: `requireRole` & `can` (Check Redis/DB for Permissions).
-  - [ ] Implement Rate Limiting (Helmet/Express-Rate-Limit).
-- [ ] **Profile Management**
-  - [ ] `PUT /users/profile`: Update name, phone (JSONB metadata).
-  - [ ] **Storage Integration:** Upload Avatar to MinIO (**Public Bucket**).
-
----
-
-## 🏠 Phase 2: Rental Marketplace Engine (Week 2)
-
-**Goal:** Allow Landlords to list properties with dynamic specs and Tenants to search them.
-
-- [ ] **Reference Data API**
-  - [ ] `GET /references/attributes`: Fetch dynamic form inputs (Bedroom, Amenities list).
-- [ ] **Property Management (Landlord)**
-  - [ ] `POST /properties`: Create listing with EAV Attributes.
-  - [ ] **Storage Integration:** Upload multiple Property Images (**Public Bucket**).
-  - [ ] `PUT /properties/:id`: Update listing & attributes.
-  - [ ] `DELETE /properties/:id`: Soft delete implementation.
-- [ ] **Marketplace Search (Tenant)**
-  - [ ] `GET /properties`: Public list with Pagination & Sorting.
-  - [ ] Implement Filters: City, Price Range, Property Type.
-  - [ ] `GET /properties/:id`: Detail view with full specs & Landlord info.
-- [ ] **Favorites**
-  - [ ] `POST /favorites/:propertyId`: Add/Remove from wishlist.
+- [ ] **Auth Module (Mobile Optimized)**
+  - [ ] `POST /auth/register`: Auto-create User + Role + Trust Profile.
+  - [ ] `POST /auth/login`: Issue long-lived JWT (for Keychain storage).
+  - [ ] `POST /auth/refresh`: Token rotation logic.
+- [ ] **Push Notification Infrastructure (FCM)**
+  - [ ] **Setup:** Configure Firebase Admin SDK.
+  - [ ] **Device Management:** `POST /notifications/device`: Store/Update FCM Device Tokens in Redis/DB.
+  - [ ] **Service:** Create `NotificationService` to handle `sendToUser(userId, payload)`.
+- [ ] **KYC System (Secure Storage)**
+  - [ ] **Private Bucket:** MinIO setup for private docs (ID Cards).
+  - [ ] `POST /kyc/upload`: Multipart upload & signed URL generation.
 
 ---
 
-## 💸 Phase 3: Finance & Transaction System (Week 3)
+## 🏠 Phase 2: Rental Marketplace API (Week 3)
 
-**Goal:** Handle payments securely (Escrow Model), manage recurring billing, and handle payouts.
+**Goal:** Serve dynamic property data to the mobile feed.
 
-- [ ] **Booking Logic**
-  - [ ] `POST /bookings`: Create booking request.
-  - [ ] Validation: Ensure User != Landlord of the property.
-- [ ] **Payment Gateway (Midtrans Integration)**
-  - [ ] Service: Generate Snap Token & Redirect URL for Invoice.
-  - [ ] `POST /webhooks/midtrans`: Handle notifications.
-  - [ ] **Escrow Logic:** On Success -> Update Invoice `PAID` -> Credit Landlord's **Wallet** (minus Platform Fee).
-- [ ] **Wallet System (Ledger)**
-  - [ ] Service: `WalletService` to handle credit/debit transactions safely.
-  - [ ] `GET /finance/wallet`: View balance and transaction history.
-- [ ] **Payout & Withdrawal**
-  - [ ] `POST /finance/bank-accounts`: Add/Edit bank details.
-  - [ ] `POST /finance/withdraw`: Request payout from Wallet.
-  - [ ] Admin: Logic to process payout (Manual Transfer or Midtrans Iris).
-- [ ] **Recurring Billing (Scheduler)**
-  - [ ] Setup `node-cron` worker (Runs daily).
-  - [ ] Logic: Auto-generate Invoice for next billing cycle (H-7).
+- [ ] **Property Management (Landlord Mobile Flow)**
+  - [ ] `POST /properties`: Multi-step form submission.
+  - [ ] **Image Optimization:** Middleware to resize/compress images for mobile bandwidth.
+- [ ] **Search & Discovery (Tenant Mobile Flow)**
+  - [ ] `GET /properties`: High-performance feed with Cursor-based pagination.
+  - [ ] **Advanced Filters:** EAV filtering (e.g., "Has AC", "Pet Friendly").
+  - [ ] `POST /favorites`: "Like" functionality.
+- [ ] **Booking Request**
+  - [ ] `POST /bookings`: Initiate booking.
+  - [ ] **Notification:** Trigger "New Booking Request" push to Landlord.
 
 ---
 
-## 🛡️ Phase 4: Trust Engine & Safety (Week 4)
+## ⚖️ Phase 3: The Trust Engine & Engagement (Week 4)
 
-**Goal:** The core value proposition. Verify identities and calculate Trust Scores.
+**Goal:** The mathematical backbone. Calculate scores and notify users of changes.
 
-- [ ] **KYC System (Know Your Customer)**
-  - [ ] **Storage Integration:** Upload KTP & Selfie (**Private Bucket**).
-  - [ ] `POST /trust/kyc`: Submit documents.
-  - [ ] `POST /admin/kyc/approve`: Admin verification logic (updates `ktpVerifiedAt`).
-  - [ ] Middleware: `requireVerified` (Block booking/withdraw if KYC pending).
-- [ ] **Trust Scoring Logic**
-  - [ ] Service: `TrustService` with dynamic point configuration.
-  - [ ] Listener: On `PAYMENT_PAID_ON_TIME` -> TTI Score ++.
-  - [ ] Listener: On `PAYMENT_LATE` -> TTI Score --.
-  - [ ] Listener: On `DISPUTE_LOST` -> LRS Score --.
-- [ ] **Trust Dashboard API**
-  - [ ] `GET /trust/my-score`: Current Score & Status.
-  - [ ] `GET /trust/logs`: History of score changes (for Line Chart).
+- [ ] **Trust Data Model Upgrade**
+  - [ ] Refactor `TrustLog` (Actor, SourceType, Metadata) - *Done in Schema*.
+  - [ ] Seed `TrustEvents` (Rules): Late Payment (-5), Fast Response (+2).
+- [ ] **Scoring Logic Implementation**
+  - [ ] Service: `TrustScoreService` for atomic updates.
+  - [ ] **Event Listeners:**
+    - [ ] `PaymentSuccess` -> `TrustScoreService.addLog()`.
+    - [ ] `ChatResponse` -> Calculate delta -> Update LRS.
+- [ ] **Trust Notifications (The Feedback Loop)**
+  - [ ] **Alert:** Send Push Notification when Score changes (e.g., "⚠️ Score Dropped: Late Payment").
+  - [ ] **Dashboard:** `GET /trust/history` for Mobile "Score Timeline" graph.
 
 ---
 
-## 💬 Phase 5: Communication & Final Polish (Week 5)
+## 🛡️ Phase 4: Admin Dashboard & Overrides (Week 5)
 
-**Goal:** Real-time interaction and system hardening.
+**Goal:** Power the Web Admin Panel to manage disputes and oversee the system.
 
-- [ ] **Chat Module**
-  - [ ] Setup Socket.io Server (with Redis Adapter).
-  - [ ] `POST /chat/room`: Initiate chat from Property page.
-  - [ ] `GET /chat/messages`: Load history with pagination.
-- [ ] **Response Time Analytics**
-  - [ ] Logic: Calculate delta between Tenant Message & Landlord Reply.
-  - [ ] Event: Update LRS "Response Rate" score based on speed.
-- [ ] **Optimization & Testing**
-  - [ ] Database Indexing audit.
-  - [ ] Final Security Audit (Headers, Input Validation).
-  - [ ] Prepare `docker-compose.prod.yml` for deployment.
+- [ ] **Admin Tools API**
+  - [ ] `GET /admin/users`: Enhanced table view with TTI/LRS columns.
+  - [ ] **Score Override System:** `POST /admin/trust/adjust`.
+    - [ ] Logic: Create `TrustLog` with `actor: ADMIN`.
+    - [ ] Notification: Push "Admin adjusted your score" to User.
+- [ ] **Dispute Management**
+  - [ ] `POST /disputes`: API for Mobile filing.
+  - [ ] **Resolution Workflow:** Admin accepts/rejects -> System auto-adjusts scores.
+
+---
+
+## 💸 Phase 5: Finance & Payment Gateway (Week 6)
+
+**Goal:** Secure transaction handling with automated trust scoring.
+
+- [ ] **Midtrans Integration**
+  - [ ] `POST /booking/checkout`: Generate Snap Token for Mobile SDK.
+  - [ ] **Webhooks:** Secure endpoint for status updates (`settlement`, `expire`).
+- [ ] **Escrow Logic**
+  - [ ] **Wallet System:** Hold funds until `STAY_COMPLETED`.
+  - [ ] **Payouts:** `POST /payouts/request` for Landlords.
+  - [ ] **Notification:** Push "Payment Received" / "Payout Processed".
+
+---
+
+## 🤖 Phase 6: AI Readiness & Polish (Week 7+)
+
+**Goal:** Prepare data structures for Agentic AI and harden security.
+
+- [ ] **AI Data Pipeline**
+  - [ ] Ensure `TrustLog.metadata` populates rich context (latency, sentiment).
+  - [ ] **Shadow Mode:** `isDraft` flag in logs for future AI suggestions.
+- [ ] **System Hardening**
+  - [ ] Rate Limiting (Strict rules for Mobile API).
+  - [ ] Input Sanitization & Helmet Security Headers.
+  - [ ] Load Testing.

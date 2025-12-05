@@ -1,7 +1,6 @@
 // =========================================================
-// RENTVERSE DATABASE SCHEMA (FINAL v3.3 - FIXED)
+// RENTVERSE DATABASE SCHEMA (v4.1 - TRUST & NOTIFICATIONS)
 // =========================================================
-
 
 generator client {
   provider = "prisma-client-js"
@@ -19,15 +18,15 @@ datasource db {
 model User {
   id              String    @id @default(uuid())
   email           String    @unique
-  emailVerifiedAt DateTime? // Email Verification Timestamp
+  emailVerifiedAt DateTime?
 
-  phone           String?   @unique // WhatsApp/Phone
-  phoneVerifiedAt DateTime? // Phone Verification Timestamp
+  phone           String?   @unique
+  phoneVerifiedAt DateTime?
 
   name            String?
   password        String
   avatarUrl       String?
-  isVerified      Boolean   @default(false) // General Verification Flag
+  isVerified      Boolean   @default(false)
 
   // Flexible Metadata (Preferences, Social Links, etc.)
   metadata        Json?
@@ -37,25 +36,47 @@ model User {
   tenantProfile   TenantTrustProfile?
   landlordProfile LandlordTrustProfile?
   favorites       UserFavorite[]
+  
+  // [NEW] Push Notification Devices
+  devices         UserDevice[]
+
+  // Chat Relations
   tenantChats     ChatRoom[]            @relation("TenantChats")
   landlordChats   ChatRoom[]            @relation("LandlordChats")
   
-  // [FIXED] Added opposite relation field for Booking
   bookings        Booking[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime? // Soft Delete
+  deletedAt       DateTime?
 
   @@map("users")
   @@index([email])
   @@index([phone])
 }
 
+// [NEW] Stores FCM Tokens for Mobile Notifications
+model UserDevice {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  fcmToken     String   @unique // Firebase Cloud Messaging Token
+  platform     String   // "ANDROID", "IOS", "WEB"
+  deviceModel  String?  // e.g. "iPhone 13"
+  
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_devices")
+}
+
 model Role {
   id          String           @id @default(uuid())
   name        String           @unique // "TENANT", "LANDLORD", "ADMIN"
   description String?
+
   users       UserRole[]
   permissions RolePermission[]
 
@@ -66,6 +87,7 @@ model Permission {
   id          String           @id @default(uuid())
   action      String           @unique // "trust.score.update", "property.create"
   description String?
+
   roles       RolePermission[]
 
   @@map("permissions")
@@ -95,7 +117,6 @@ model RolePermission {
 // 2. MODULE: RENTAL & MARKETPLACE (Normalized EAV)
 // =========================================================
 
-// Master Data: Property Types (Apartment, House, etc)
 model PropertyType {
   id         Int        @id @default(autoincrement())
   slug       String     @unique
@@ -105,7 +126,6 @@ model PropertyType {
   @@map("ref_property_types")
 }
 
-// Master Data: Listing Types (Rent, Sale)
 model ListingType {
   id         Int        @id @default(autoincrement())
   slug       String     @unique
@@ -115,46 +135,39 @@ model ListingType {
   @@map("ref_listing_types")
 }
 
-// Master Data: Billing Periods (Monthly, Yearly)
 model BillingPeriod {
   id             Int                     @id @default(autoincrement())
   slug           String                  @unique
   label          String
-  durationMonths Int // Logic helper (1, 3, 12)
+  durationMonths Int
   bookings       Booking[]
   properties     PropertyBillingPeriod[]
 
   @@map("ref_billing_periods")
 }
 
-// --- DYNAMIC ATTRIBUTES ENGINE (EAV) ---
-
-// Master Data: Attribute Definitions (Bedroom, Bathroom, Garage)
 model PropertyAttributeType {
   id       Int                 @id @default(autoincrement())
-  slug     String              @unique // "bedroom", "bathroom", "area"
-  label    String // "Bedroom", "Building Area"
-  dataType String // "NUMBER", "STRING", "BOOLEAN"
-  iconUrl  String? // Icon URL for UI
+  slug     String              @unique
+  label    String
+  dataType String
+  iconUrl  String?
   values   PropertyAttribute[]
 
   @@map("ref_property_attribute_types")
 }
 
-// Transaction: Attribute Values per Property
 model PropertyAttribute {
   id              String                @id @default(uuid())
   propertyId      String
   property        Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   attributeTypeId Int
   attributeType   PropertyAttributeType @relation(fields: [attributeTypeId], references: [id])
-  value           String // Stored as string, parsed by app logic
+  value           String
 
-  @@unique([propertyId, attributeTypeId]) // One value per attribute type per property
+  @@unique([propertyId, attributeTypeId])
   @@map("property_attributes")
 }
-
-// --- CORE PROPERTY TABLE ---
 
 model Property {
   id          String  @id @default(uuid())
@@ -162,32 +175,26 @@ model Property {
   title       String
   description String? @db.Text
 
-  // Categorization
   propertyTypeId Int
   propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
 
-  // Attributes (EAV Relation)
   attributes PropertyAttribute[]
+  amenities  String[] @default([])
 
-  amenities String[] @default([]) // Simple tags: ["WIFI", "POOL"]
-
-  // Location
   address   String
   city      String
   country   String
   latitude  Float?
   longitude Float?
 
-  // Financials
   listingTypeId Int
   listingType   ListingType @relation(fields: [listingTypeId], references: [id])
   price         Decimal     @db.Decimal(15, 2)
   currency      String      @default("IDR")
   isVerified    Boolean     @default(false)
 
-  metadata Json? // Extra config
+  metadata Json?
 
-  // Relations
   allowedBillingPeriods PropertyBillingPeriod[]
   images                PropertyImage[]
   bookings              Booking[]
@@ -196,7 +203,7 @@ model Property {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  deletedAt DateTime? // Soft Delete
+  deletedAt DateTime?
 
   @@index([city])
   @@index([price])
@@ -219,7 +226,7 @@ model PropertyImage {
   id         String   @id @default(uuid())
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  url        String   // Public URL
+  url        String
   isPrimary  Boolean  @default(false)
 
   @@map("property_images")
@@ -243,7 +250,8 @@ model UserFavorite {
 // =========================================================
 
 model Booking {
-  id         String @id @default(uuid())
+  id    String @id @default(uuid())
+  
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id])
   tenantId   String
@@ -299,6 +307,10 @@ model TrustEvent {
   role        String
   baseImpact  Float
   description String?
+  
+  // [NEW] Categorize the rule type
+  sourceType  String   @default("AUTOMATED") // AUTOMATED, MANUAL, AI_SUGGESTED
+
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -312,11 +324,10 @@ model TenantTrustProfile {
   user      User   @relation(fields: [userRefId], references: [id])
   tti_score Float  @default(50.0)
 
-  // KYC Fields
-  kyc_status    String    @default("PENDING") // PENDING, SUBMITTED, VERIFIED, REJECTED
-  ktpUrl        String?   // Private URL
-  ktpVerifiedAt DateTime? // KTP Verified Timestamp
-  selfieUrl     String?   // Private URL
+  kyc_status    String    @default("PENDING")
+  ktpUrl        String?
+  ktpVerifiedAt DateTime?
+  selfieUrl     String?
 
   payment_faults Int @default(0)
 
@@ -330,12 +341,11 @@ model LandlordTrustProfile {
   userRefId     String @unique
   user          User   @relation(fields: [userRefId], references: [id])
   lrs_score     Float  @default(50.0)
-  response_rate Float  @default(0.0) // Minutes
+  response_rate Float  @default(0.0)
 
-  // KYC Fields (Optional but recommended for Landlords)
   kyc_status    String    @default("PENDING")
   ktpUrl        String?
-  ktpVerifiedAt DateTime? // KTP Verified Timestamp
+  ktpVerifiedAt DateTime?
 
   logs TrustLog[]
 
@@ -343,14 +353,19 @@ model LandlordTrustProfile {
 }
 
 model TrustLog {
-  id          String  @id @default(uuid())
-  eventCode   String
-  impact      Float
-  scoreSnap   Float
-  description String?
-  evidenceUrl String? // Private URL
+  id            String  @id @default(uuid())
+  eventCode     String
+  impact        Float
+  scoreSnapshot Float   // [UPDATED] Renamed from scoreSnap for clarity
+  description   String?
+  evidenceUrl   String?
 
-  // Polymorphic Foreign Keys
+  // [NEW] Audit & Context Fields
+  referenceId   String? // e.g. BookingID, PaymentID
+  referenceType String? // "BOOKING", "PAYMENT", "MANUAL", "DISPUTE"
+  actor         String  @default("SYSTEM") // "SYSTEM", "ADMIN:<id>", "AI_AGENT"
+  metadata      Json?   // Arbitrary context: { "latency": 250, "ai_confidence": 0.98 }
+
   tenantId   String?
   tenant     TenantTrustProfile?   @relation(fields: [tenantId], references: [id])
   landlordId String?
