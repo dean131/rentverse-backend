@@ -26,24 +26,21 @@ class PropertiesService {
   }
 
   /**
-   * [NEW] Get All Properties (Search Logic)
+   * [Refactored] Get All Properties (Infinite Scroll)
    */
   async getAllProperties(query: any) {
-    const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
+    const cursor = query.cursor as string | undefined;
 
-    // 1. Build Filter Object
+    // 1. Build Filter Object (Same as before)
     const where: Prisma.PropertyWhereInput = {
-      deletedAt: null, // Only active listings
-      isVerified: true, // Only verified listings (Optional: depends on business logic)
+      deletedAt: null,
+      isVerified: true,
     };
 
-    // Search by Title (Case Insensitive)
     if (query.search) {
       where.title = { contains: query.search as string, mode: "insensitive" };
     }
-
-    // Filter by City
     if (query.city) {
       where.city = { contains: query.city as string, mode: "insensitive" };
     }
@@ -60,11 +57,10 @@ class PropertiesService {
       if (query.maxPrice) where.price.lte = Number(query.maxPrice);
     }
 
-    // 2. Build Sort Object
+    // 2. Build Sort
     let orderBy: Prisma.PropertyOrderByWithRelationInput = {
       createdAt: "desc",
-    }; // Default: Newest
-
+    };
     if (query.sortBy === "price_asc") orderBy = { price: "asc" };
     if (query.sortBy === "price_desc") orderBy = { price: "desc" };
     if (query.sortBy === "oldest") orderBy = { createdAt: "asc" };
@@ -72,16 +68,32 @@ class PropertiesService {
     // 3. Execute Query
     const { total, properties } = await propertiesRepository.findAll(
       where,
-      page,
       limit,
+      cursor,
       orderBy
     );
 
-    return { total, properties, page, limit };
+    // 4. Calculate Next Cursor
+    // If we got fewer items than limit, we reached the end.
+    let nextCursor: string | null = null;
+    if (properties.length === limit) {
+      // The cursor for the next page is the ID of the last item we just fetched
+      nextCursor = properties[properties.length - 1].id;
+    }
+
+    return {
+      data: properties,
+      meta: {
+        total,
+        limit,
+        nextCursor,
+        hasMore: !!nextCursor,
+      },
+    };
   }
 
   /**
-   * [NEW] Get Property Detail
+   * Get Property Detail
    */
   async getPropertyById(id: string) {
     const property = await propertiesRepository.findById(id);

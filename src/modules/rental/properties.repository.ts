@@ -57,33 +57,41 @@ class PropertiesRepository {
   }
 
   /**
-   * [NEW] Find All with Dynamic Filters & Pagination
+   * [Refactored] Find All using Cursor Pagination
+   * optimized for Infinite Scroll on Mobile.
    */
   async findAll(
     where: Prisma.PropertyWhereInput,
-    page: number,
     limit: number,
-    orderBy: Prisma.PropertyOrderByWithRelationInput
+    cursor?: string, // The ID of the last item user saw
+    orderBy: Prisma.PropertyOrderByWithRelationInput = { createdAt: "desc" }
   ) {
-    const skip = (page - 1) * limit;
+    // If cursor is provided, we skip the cursor itself (cursor + 1)
+    const cursorObj = cursor ? { id: cursor } : undefined;
+    const skip = cursor ? 1 : 0;
 
     const [total, properties] = await prisma.$transaction([
+      // Count is still useful for "Showing 10 of 500 results"
       prisma.property.count({ where }),
+
       prisma.property.findMany({
         where,
-        skip,
         take: limit,
+        skip,
+        cursor: cursorObj,
         orderBy,
         include: {
           images: {
-            where: { isPrimary: true }, // List view only needs primary image
+            where: { isPrimary: true },
             select: { url: true },
           },
           propertyType: true,
           listingType: true,
-          attributes: { 
-             include: { attributeType: true } // Include labels like "Bedroom"
+          attributes: {
+            include: { attributeType: true },
           },
+          // [Mobile Optimization] Include condensed landlord info
+          // landlord: { select: { name: true, avatarUrl: true } }
         },
       }),
     ]);

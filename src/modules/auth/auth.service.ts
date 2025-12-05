@@ -3,7 +3,12 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 import authRepository from "./auth.repository.js";
-import { RegisterInput, LoginInput, UpdateProfileInput } from "./auth.schema.js";
+import {
+  RegisterInput,
+  LoginInput,
+  UpdateProfileInput,
+} from "./auth.schema.js";
+import eventBus from "../../shared/bus/event-bus.js";
 
 class AuthService {
   /**
@@ -48,6 +53,14 @@ class AuthService {
       role.id,
       input.role as "TENANT" | "LANDLORD"
     );
+
+    // Publish Event to the Bus
+    // "Hey system! A new user just registered!"
+    eventBus.publish("AUTH:USER_REGISTERED", {
+      userId: newUser.id,
+      email: newUser.email,
+      role: input.role as "TENANT" | "LANDLORD",
+    });
 
     // 6. Return DTO
     return {

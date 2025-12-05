@@ -1,8 +1,11 @@
-import { Request, Response } from 'express';
-import propertiesService from './properties.service.js';
-import catchAsync from '../../shared/utils/catchAsync.js';
-import AppError from '../../shared/utils/AppError.js';
-import { sendSuccess, sendPaginated } from '../../shared/utils/response.helper.js';
+import { Request, Response } from "express";
+import propertiesService from "./properties.service.js";
+import catchAsync from "../../shared/utils/catchAsync.js";
+import AppError from "../../shared/utils/AppError.js";
+import {
+  sendSuccess,
+  sendInfiniteList,
+} from "../../shared/utils/response.helper.js";
 
 class PropertiesController {
   create = catchAsync(async (req: Request, res: Response) => {
@@ -20,24 +23,22 @@ class PropertiesController {
   });
 
   /**
-   * [NEW] Public List
+   * Public List with Infinite Scroll
    */
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const { total, properties, page, limit } =
-      await propertiesService.getAllProperties(req.query);
+    // Service now returns { data, meta }
+    const { data, meta } = await propertiesService.getAllProperties(req.query);
 
-    return sendPaginated(
+    return sendInfiniteList(
       res,
-      properties,
-      total,
-      page,
-      limit,
+      data,
+      meta,
       "Properties retrieved successfully"
     );
   });
 
   /**
-   * [NEW] Public Detail
+   * Public Detail
    */
   getOne = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;

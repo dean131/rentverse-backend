@@ -4,17 +4,25 @@ import prisma from "./config/prisma.js";
 import logger from "./config/logger.js";
 import redis from "./config/redis.js";
 
+import { registerTrustSubscribers } from "./modules/trust/trust.subscribers.js";
+import { registerNotificationSubscribers } from "./modules/notification/notification.subscribers.js"; 
+
 /**
  * Start the Express Server
  */
 const startServer = async () => {
   try {
-    // 1. Verify Database Connection
+    // Verify Database Connection
     // Executing a raw query ensures the connection pool is active.
     await prisma.$queryRaw`SELECT 1`;
     logger.info("[INFO] Database Connected Successfully");
 
-    // 2. Start HTTP Listener
+    // Initialize Event Subscribers
+    registerTrustSubscribers();
+    registerNotificationSubscribers();
+    logger.info("[INFO] Event Subscribers Registered");
+
+    // Start HTTP Listener
     const server = app.listen(env.PORT, () => {
       logger.info(`[INFO] Server running on port ${env.PORT}`);
       logger.info(`[INFO] Environment: ${env.NODE_ENV}`);
