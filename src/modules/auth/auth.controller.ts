@@ -14,6 +14,20 @@ class AuthController {
     return sendSuccess(res, result, "Login successful");
   });
 
+  refresh = catchAsync(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    const result = await authService.refreshToken(refreshToken);
+    return sendSuccess(res, result, "Token refreshed successfully");
+  });
+
+  logout = catchAsync(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    if (refreshToken) {
+      await authService.logout(refreshToken);
+    }
+    return sendSuccess(res, null, "Logged out successfully");
+  });
+
   getMe = catchAsync(async (req: Request, res: Response) => {
     const result = await authService.getMe(req.user!.id);
     return sendSuccess(res, result, "User profile retrieved successfully");

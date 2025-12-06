@@ -3,17 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: development # Targets the 'development' stage
+      target: development
     env_file:
       - .env
     ports:
       - "3000:3000"
-      - "5555:5555" # Expose Prisma Studio for debugging
+      - "5555:5555"
     volumes:
-      # Sync source code for Hot Reloading
       - ./src:/usr/src/app/src
-      # Sync Prisma schema
       - ./prisma:/usr/src/app/prisma
-      # Prevent host node_modules from overwriting container modules
+      - ./logs:/usr/src/app/logs
       - /usr/src/app/node_modules
     command: npm run dev

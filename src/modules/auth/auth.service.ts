@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 import authRepository from "./auth.repository.js";
@@ -8,29 +9,48 @@ import {
   LoginInput,
   UpdateProfileInput,
 } from "./auth.schema.js";
-import eventBus from "../../shared/bus/event-bus.js"; // [NEW] Import Event Bus
+import eventBus from "../../shared/bus/event-bus.js";
+import redis from "../../config/redis.js";
 
 class AuthService {
+  /**
+   * Helper: Generate Access (JWT) & Refresh (Opaque) Tokens
+   * Stores Refresh Token in Redis with TTL.
+   */
+  private async generateTokens(userId: string, email: string, role: string) {
+    // 1. Access Token (Stateless, 15 Minutes)
+    const accessToken = jwt.sign({ id: userId, email, role }, env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
+    // 2. Refresh Token (Stateful, 30 Days)
+    const refreshToken = crypto.randomBytes(40).toString("hex");
+    const redisKey = `rt:${refreshToken}`;
+    const redisPayload = JSON.stringify({ userId, email, role });
+
+    // Store in Redis: Expires in 30 days (seconds)
+    await redis.setex(redisKey, 30 * 24 * 60 * 60, redisPayload);
+
+    return { accessToken, refreshToken };
+  }
+
   async register(input: RegisterInput) {
-    // 1. Check Email
+    // 1. Uniqueness Checks
     const existingUser = await authRepository.findUserByEmail(input.email);
     if (existingUser) throw new AppError("Email is already registered", 409);
 
-    // 2. Check Phone
     if (input.phone) {
       const existingPhone = await authRepository.findUserByPhone(input.phone);
       if (existingPhone)
         throw new AppError("Phone number is already registered", 409);
     }
 
-    // 3. Validate Role
+    // 2. Role Validation
     const role = await authRepository.findRoleByName(input.role);
     if (!role) throw new AppError(`Role '${input.role}' not found`, 500);
 
-    // 4. Hash Password
+    // 3. Create User
     const hashedPassword = await bcrypt.hash(input.password, 10);
-
-    // 5. Create User
     const newUser = await authRepository.createUserWithProfile(
       {
         email: input.email,
@@ -42,8 +62,7 @@ class AuthService {
       input.role as "TENANT" | "LANDLORD"
     );
 
-    // 6. [CRITICAL] Publish Event
-    // This triggers Trust Engine (Init Score) and Notification (Welcome Push)
+    // 4. [EVENT] Trigger Side Effects (Trust Score, Notifications)
     eventBus.publish("AUTH:USER_REGISTERED", {
       userId: newUser.id,
       email: newUser.email,
@@ -68,22 +87,40 @@ class AuthService {
     const primaryRole =
       user.roles.length > 0 ? user.roles[0].role.name : "UNKNOWN";
 
-    // [MOBILE OPTIMIZATION] Increased expiry to 30 days
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: primaryRole },
-      env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
+    // Generate Token Pair
+    const tokens = await this.generateTokens(user.id, user.email, primaryRole);
 
     return {
-      accessToken: token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: primaryRole,
       },
+      ...tokens,
     };
+  }
+
+  async refreshToken(token: string) {
+    const redisKey = `rt:${token}`;
+    const data = await redis.get(redisKey);
+
+    if (!data) {
+      throw new AppError("Invalid or expired refresh token", 401);
+    }
+
+    const { userId, email, role } = JSON.parse(data);
+
+    // Rotation: Delete used token immediately
+    await redis.del(redisKey);
+
+    // Issue new pair
+    return this.generateTokens(userId, email, role);
+  }
+
+  async logout(refreshToken: string) {
+    await redis.del(`rt:${refreshToken}`);
+    return true;
   }
 
   async getMe(userId: string) {

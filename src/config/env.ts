@@ -5,26 +5,17 @@ import path from "path";
 // Load .env file
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-/**
- * Schema Validation for Environment Variables
- * - Ensures all required variables exist.
- * - Coerces types (String -> Number) where necessary.
- * - Provides default values for non-critical configs.
- */
 const envSchema = z.object({
   // App
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().default(3000),
 
   // Database
-  DATABASE_URL: z.string().default("127.0.0.1:3306"),
+  DATABASE_URL: z.string(),
 
   // Cache (Redis)
   REDIS_HOST: z.string(),
   REDIS_PORT: z.coerce.number().default(6379),
-  // REDIS_PASSWORD: z.string().optional(),
 
   // Object Storage (MinIO)
   MINIO_ENDPOINT: z.string(),
@@ -34,11 +25,15 @@ const envSchema = z.object({
   STORAGE_PUBLIC_HOST: z.string().url(),
 
   // Security
-  JWT_SECRET: z.string().min(32, "JWT Secret must be at least 32 characters"),
+  JWT_SECRET: z.string().min(32),
 
   // Payment (Midtrans)
   MIDTRANS_SERVER_KEY: z.string(),
   MIDTRANS_CLIENT_KEY: z.string(),
+
+  // Notifications (Firebase)
+  // Optional: If missing, the app runs in "Mock Notification" mode
+  FIREBASE_CREDENTIALS_PATH: z.string().optional(),
 });
 
 // Parse and Validate
@@ -46,7 +41,7 @@ const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
   console.error(
-    "❌ Invalid environment variables:",
+    "[ERROR]Invalid environment variables:",
     JSON.stringify(_env.error.format(), null, 2)
   );
   process.exit(1);

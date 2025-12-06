@@ -35,12 +35,15 @@ class AuthRepository {
     return await prisma.role.findUnique({ where: { name } });
   }
 
+  /**
+   * Atomic Transaction: Create User + Assign Role + Initialize Trust Profile
+   */
   async createUserWithProfile(
     userData: Prisma.UserCreateInput,
     roleId: string,
     roleName: "TENANT" | "LANDLORD"
   ) {
-    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return await prisma.$transaction(async (tx) => {
       // 1. Create Base User
       const user = await tx.user.create({
         data: {
@@ -51,7 +54,7 @@ class AuthRepository {
         },
       });
 
-      // 2. Create Empty Trust Profile
+      // 2. Create Trust Profile based on Role
       if (roleName === "TENANT") {
         await tx.tenantTrustProfile.create({
           data: { userRefId: user.id, tti_score: 50.0 },

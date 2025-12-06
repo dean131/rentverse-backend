@@ -25,6 +25,7 @@ COPY prisma ./prisma
 COPY src ./src
 COPY tsconfig.json ./
 COPY nodemon.json ./
+COPY firebase-service-account.json ./
 
 # Generate Prisma Client (Output: src/shared/prisma-client)
 RUN npx prisma generate
