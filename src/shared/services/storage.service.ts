@@ -5,15 +5,19 @@ import path from "path";
 import logger from "../../config/logger.js";
 
 class StorageService {
-  private publicBucket = env.MINIO_BUCKET; // "rentverse-public"
-  private privateBucket = "rentverse-private"; // Locked bucket
+  private publicBucket = env.MINIO_BUCKET;
+  private privateBucket = "rentverse-private";
 
   constructor() {
-    this.ensureBucketExists(this.publicBucket, true);
-    this.ensureBucketExists(this.privateBucket, false); // Private
+    this.initBuckets();
   }
 
-  private async ensureBucketExists(bucketName: string, isPublic: boolean) {
+  private async initBuckets() {
+    await this.ensureBucket(this.publicBucket, true);
+    await this.ensureBucket(this.privateBucket, false);
+  }
+
+  private async ensureBucket(bucketName: string, isPublic: boolean) {
     try {
       const exists = await minioClient.bucketExists(bucketName);
       if (!exists) {
@@ -34,7 +38,7 @@ class StorageService {
           await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
         }
         logger.info(
-          `[Storage] Bucket '${bucketName}' created (Public: ${isPublic})`
+          `[Storage] Bucket '${bucketName}' ready (Public: ${isPublic})`
         );
       }
     } catch (error) {
@@ -43,11 +47,11 @@ class StorageService {
   }
 
   /**
-   * Upload Public File (Photos)
+   * Upload Public File (Property Photos, Avatars)
    */
-  async uploadPublic(
+  async uploadFile(
     file: Express.Multer.File,
-    folder = "properties"
+    folder = "public"
   ): Promise<string> {
     const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
     await minioClient.putObject(
@@ -59,11 +63,13 @@ class StorageService {
         "Content-Type": file.mimetype,
       }
     );
-    return `${this.publicBucket}/${filename}`; // Relative path
+    // Return relative path: "rentverse-public/prop/123.jpg"
+    return `${this.publicBucket}/${filename}`;
   }
 
   /**
-   * Upload Private File (ID Cards)
+   * Upload Private File (ID Cards, Contracts)
+   * Not accessible via public URL.
    */
   async uploadPrivate(
     file: Express.Multer.File,
@@ -79,19 +85,18 @@ class StorageService {
         "Content-Type": file.mimetype,
       }
     );
+    // Return relative path: "rentverse-private/kyc/123.jpg"
     return `${this.privateBucket}/${filename}`;
   }
 
   /**
-   * Generate a Temporary Access Link (Signed URL)
-   * Valid for 1 hour only.
+   * Generate Signed URL for viewing private files
+   * Valid for 1 Hour (3600 seconds)
    */
   async getPresignedUrl(filePath: string): Promise<string> {
     const [bucket, ...rest] = filePath.split("/");
     const objectName = rest.join("/");
-
-    // Generates a URL like: http://minio.../bucket/file?signature=xyz...
-    return await minioClient.presignedGetObject(bucket, objectName, 60 * 60);
+    return await minioClient.presignedGetObject(bucket, objectName, 3600);
   }
 }
 

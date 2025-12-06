@@ -9,8 +9,8 @@ router.post(
   "/submit",
   verifyToken,
   upload.fields([
-    { name: 'ktp', maxCount: 1 },
-    { name: 'selfie', maxCount: 1 }
+    { name: "ktp", maxCount: 1 },
+    { name: "selfie", maxCount: 1 },
   ]),
   kycController.submit
 );

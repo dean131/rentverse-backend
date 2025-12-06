@@ -1,58 +1,58 @@
-### 🗺️ Rentverse Project Roadmap (v2.2 - Live Status)
+# 🗺️ Rentverse Project Roadmap (v2.4 - Live Status)
 
-**Current Focus:** Closing Phase 1 (KYC) and Phase 2 (Favorites/Booking).
+**Core Shift:** Mobile-First for Users (Tenant/Landlord) | Web-Based for Admin Operations.
+**Focus:** Secure Identity, Trust Engine Accuracy, and High-Performance Mobile Feed.
 
 ---
 
-#### 🏁 Phase 0: Foundation & Infrastructure
-
+## 🏁 Phase 0: Foundation & Infrastructure (Week 1)
 **Status:** ✅ **COMPLETE**
 
-- [x] **Project Initialization** (Node.js 24, Modular Monolith).
+- [x] **Project Initialization** (Node.js 24 + TS, Modular Monolith).
 - [x] **Containerization** (Docker, Postgres 15, Redis, MinIO).
 - [x] **Database** (Prisma Schema v6 with EAV & Trust Ledger).
 - [x] **Unified API Standard** (`ResponseHelper`, `AppError`, `EventBus`).
 
 ---
 
-#### 📱 Phase 1: Identity, Auth & Notifications
+## 📱 Phase 1: Identity, Auth & Notifications (Week 2)
+**Status:** ✅ **COMPLETE**
 
-**Status:** 🚧 **IN PROGRESS** (Auth & Notifications done, KYC pending)
-
-- [x] **Auth Module**
+- [x] **Secure Auth Module**
   - [x] `POST /auth/register` & `POST /auth/login`.
-  - [x] **Device Registration:** `POST /notifications/device` (FCM Token handling).
-  - [ ] `POST /auth/refresh`: Token rotation logic.
+  - [x] **Session Management:** Hybrid System (Stateless Access Token + Stateful Refresh Token).
+  - [x] **Token Rotation:** `POST /auth/refresh` with Redis backing for theft detection.
 - [x] **Push Notification System**
   - [x] `NotificationModule` decoupled via Event Bus.
-  - [x] `NotificationService` (Firebase Admin SDK wrapper).
+  - [x] `POST /notifications/device`: Store/Update FCM Device Tokens.
   - [x] **Welcome Alert:** Auto-sends push notification on registration.
-- [ ] **KYC System (Secure Storage)**
-  - [ ] **Private Bucket:** Configure MinIO for private access.
-  - [ ] `POST /kyc/upload`: Handle ID Card upload & generate signed URLs.
+- [x] **KYC System (Secure Storage)**
+  - [x] **Private Bucket:** Configure MinIO for private access (ID Cards).
+  - [x] `POST /kyc/upload`: Multipart upload & signed URL generation.
+  - [x] **Verification Logic:** Service to update Trust Profile status.
 
 ---
 
-#### 🏠 Phase 2: Rental Marketplace API
-
+## 🏠 Phase 2: Rental Marketplace API (Week 3)
 **Status:** 🚧 **IN PROGRESS** (Feed done, Engagement pending)
 
 - [x] **Property Management**
-  - [x] `POST /properties`: Create listing with images.
+  - [x] `POST /properties`: Create listing with images (Public Bucket).
   - [x] **EAV Attributes:** Dynamic specs (Bedroom, WiFi, etc).
+  - [x] **Portable Media:** DB stores relative paths; API returns full URLs dynamically.
 - [x] **Mobile Search Feed**
-  - [x] `GET /properties`: **Refactored to Infinite Scroll** (Cursor-based).
+  - [x] `GET /properties`: **Refactored to Infinite Scroll** (Cursor-based pagination).
+  - [x] **Detail View:** `GET /properties/:id` implemented.
   - [x] **Filters:** Search by City, Title, Price.
 - [ ] **Engagement**
   - [ ] `POST /favorites/:id`: "Like" functionality.
   - [ ] `GET /favorites`: List liked properties.
 - [ ] **Booking Request**
-  - [ ] `POST /bookings`: Initiate a rental request.
+  - [ ] `POST /bookings`: Initiate a rental request (Requires KYC Verified status).
 
 ---
 
-#### ⚖️ Phase 3: The Trust Engine
-
+## ⚖️ Phase 3: The Trust Engine
 **Status:** 🚧 **IN PROGRESS** (Foundation ready, Logic pending)
 
 - [x] **Data Model**
@@ -68,16 +68,16 @@
 
 ---
 
-#### 🛡️ Phase 4: Admin Dashboard & Overrides
-
+## 🛡️ Phase 4: Admin Dashboard & Overrides
 **Status:** 📅 **PLANNED** (Week 5)
 
 - [ ] `GET /admin/users`: Table view with Scores.
 - [ ] `POST /admin/trust/adjust`: Manual override with audit log.
 - [ ] `POST /disputes/resolve`: Dispute handling.
 
-#### 💸 Phase 5: Finance & Escrow
+---
 
+## 💸 Phase 5: Finance & Escrow
 **Status:** 📅 **PLANNED** (Week 6)
 
 - [ ] Midtrans Snap Integration.
@@ -85,3 +85,9 @@
 - [ ] Payout Requests.
 
 ---
+
+## 🤖 Phase 6: AI Readiness
+**Status:** 📅 **PLANNED** (Week 7+)
+
+- [ ] **AI Data Pipeline:** Ensure `TrustLog.metadata` populates context.
+- [ ] **Shadow Mode:** `isDraft` flag in logs for future AI suggestions.

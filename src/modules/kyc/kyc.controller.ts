@@ -5,11 +5,11 @@ import { sendSuccess } from "../../shared/utils/response.helper.js";
 
 class KycController {
   submit = catchAsync(async (req: Request, res: Response) => {
-    // Multer puts files in req.files (dictionary style)
+    // Files are mapped by field name
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     
     const result = await kycService.submitKyc(req.user!.id, files);
-    return sendSuccess(res, result, "Verification documents uploaded");
+    return sendSuccess(res, result, "KYC submitted successfully");
   });
 }
 

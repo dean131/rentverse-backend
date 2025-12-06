@@ -1,7 +1,10 @@
 import prisma from "../../config/prisma.js";
 
 class KycRepository {
-  async updateTenantKyc(userId: string, data: { ktpUrl: string; selfieUrl: string }) {
+  async updateTenantKyc(
+    userId: string,
+    data: { ktpUrl: string; selfieUrl: string }
+  ) {
     return await prisma.tenantTrustProfile.update({
       where: { userRefId: userId },
       data: {

@@ -16,6 +16,12 @@ export interface EventMap {
     newScore: number; 
     reason: string 
   };
+
+  // KYC Events
+  'KYC:SUBMITTED': { 
+    userId: string; 
+    role: string 
+  };
 }
 
 export type EventKey = keyof EventMap;
