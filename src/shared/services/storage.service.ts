@@ -5,51 +5,93 @@ import path from "path";
 import logger from "../../config/logger.js";
 
 class StorageService {
-  private bucketName = env.MINIO_BUCKET;
+  private publicBucket = env.MINIO_BUCKET; // "rentverse-public"
+  private privateBucket = "rentverse-private"; // Locked bucket
 
   constructor() {
-    this.ensureBucketExists();
+    this.ensureBucketExists(this.publicBucket, true);
+    this.ensureBucketExists(this.privateBucket, false); // Private
   }
 
-  private async ensureBucketExists() {
+  private async ensureBucketExists(bucketName: string, isPublic: boolean) {
     try {
-      const exists = await minioClient.bucketExists(this.bucketName);
+      const exists = await minioClient.bucketExists(bucketName);
       if (!exists) {
-        await minioClient.makeBucket(this.bucketName, env.MINIO_REGION);
-        
-        const policy = {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: { AWS: ["*"] },
-              Action: ["s3:GetObject"],
-              Resource: [`arn:aws:s3:::${this.bucketName}/*`],
-            },
-          ],
-        };
-        await minioClient.setBucketPolicy(this.bucketName, JSON.stringify(policy));
-        logger.info(`[Storage] Bucket '${this.bucketName}' created with public policy.`);
+        await minioClient.makeBucket(bucketName, env.MINIO_REGION);
+
+        if (isPublic) {
+          const policy = {
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Effect: "Allow",
+                Principal: { AWS: ["*"] },
+                Action: ["s3:GetObject"],
+                Resource: [`arn:aws:s3:::${bucketName}/*`],
+              },
+            ],
+          };
+          await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+        }
+        logger.info(
+          `[Storage] Bucket '${bucketName}' created (Public: ${isPublic})`
+        );
       }
     } catch (error) {
-      logger.error("[Storage] Failed to initialize bucket:", error);
+      logger.error(`[Storage] Failed to init bucket ${bucketName}:`, error);
     }
   }
 
-  async uploadFile(file: Express.Multer.File, folder = "properties"): Promise<string> {
-    const extension = path.extname(file.originalname);
-    const filename = `${folder}/${uuidv4()}${extension}`;
-
+  /**
+   * Upload Public File (Photos)
+   */
+  async uploadPublic(
+    file: Express.Multer.File,
+    folder = "properties"
+  ): Promise<string> {
+    const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
     await minioClient.putObject(
-      this.bucketName,
+      this.publicBucket,
       filename,
       file.buffer,
       file.size,
-      { "Content-Type": file.mimetype }
+      {
+        "Content-Type": file.mimetype,
+      }
     );
+    return `${this.publicBucket}/${filename}`; // Relative path
+  }
 
-    // Return Relative Path ONLY
-    return `${this.bucketName}/${filename}`;
+  /**
+   * Upload Private File (ID Cards)
+   */
+  async uploadPrivate(
+    file: Express.Multer.File,
+    folder = "kyc"
+  ): Promise<string> {
+    const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
+    await minioClient.putObject(
+      this.privateBucket,
+      filename,
+      file.buffer,
+      file.size,
+      {
+        "Content-Type": file.mimetype,
+      }
+    );
+    return `${this.privateBucket}/${filename}`;
+  }
+
+  /**
+   * Generate a Temporary Access Link (Signed URL)
+   * Valid for 1 hour only.
+   */
+  async getPresignedUrl(filePath: string): Promise<string> {
+    const [bucket, ...rest] = filePath.split("/");
+    const objectName = rest.join("/");
+
+    // Generates a URL like: http://minio.../bucket/file?signature=xyz...
+    return await minioClient.presignedGetObject(bucket, objectName, 60 * 60);
   }
 }
 

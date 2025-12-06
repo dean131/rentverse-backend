@@ -9,6 +9,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import rentalRoutes from './modules/rental/rental.routes.js';
 import propertiesRoutes from './modules/rental/properties.routes.js';
 import notificationRoutes from "./modules/notification/notification.routes.js";
+import kycRoutes from "./modules/kyc/kyc.routes.js";
 
 const app: Application = express();
 
@@ -59,6 +60,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/rental", rentalRoutes);
 app.use("/api/v1/properties", propertiesRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/kyc", kycRoutes);
 
 // Handle 404 - Not Found
 app.use((req: Request, res: Response) => {

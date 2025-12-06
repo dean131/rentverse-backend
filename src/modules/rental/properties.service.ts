@@ -28,7 +28,7 @@ class PropertiesService {
     files: Express.Multer.File[]
   ) {
     const uploadPromises = files.map((file) =>
-      storageService.uploadFile(file, `properties/${landlordId}`)
+      storageService.uploadPublic(file, `properties/${landlordId}`)
     );
     const imageUrls = await Promise.all(uploadPromises);
 
