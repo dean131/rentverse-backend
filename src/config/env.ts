@@ -18,11 +18,18 @@ const envSchema = z.object({
   REDIS_PORT: z.coerce.number().default(6379),
 
   // Object Storage (MinIO)
-  MINIO_ENDPOINT: z.string(),
+  MINIO_ENDPOINT: z.string(), // "minio_storage"
   MINIO_PORT: z.coerce.number().default(9000),
   MINIO_ACCESS_KEY: z.string(),
   MINIO_SECRET_KEY: z.string(),
-  STORAGE_PUBLIC_HOST: z.string().url(),
+  MINIO_USE_SSL: z.string().transform((val) => val === 'true').default(false),
+
+  // Public URL for Mobile App
+  MINIO_URL: z.string().url(),
+  
+  // Bucket Details
+  MINIO_BUCKET: z.string().default("rentverse-public"),
+  MINIO_REGION: z.string().default("us-east-1"),
 
   // Security
   JWT_SECRET: z.string().min(32),
