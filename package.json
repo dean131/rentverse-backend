@@ -18,7 +18,7 @@
     "db:push": "prisma db push",
     "db:seed": "node --loader ts-node/esm prisma/seed.ts",
     "db:studio": "prisma studio",
-    "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up -d --build",
+    "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up --build",
     "docker:dev-down": "docker compose -f compose.yml -f compose.dev.yml down",
     "docker:prod": "docker compose -f compose.yml -f compose.prod.yml up -d --build",
     "docker:prod-down": "docker compose -f compose.yml -f compose.prod.yml down"
@@ -34,6 +34,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
+    "firebase-admin": "^13.6.0",
     "helmet": "^8.1.0",
     "iconv-lite": "^0.7.0",
     "ioredis": "^5.8.2",

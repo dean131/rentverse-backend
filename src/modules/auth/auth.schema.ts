@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-/**
- * Schema for User Registration.
- * Enforces strong password policies and valid role selection.
- */
 export const registerSchema = z.object({
   email: z.string().email("Invalid email address format"),
   password: z
@@ -17,9 +13,6 @@ export const registerSchema = z.object({
   }),
 });
 
-/**
- * Schema for User Login.
- */
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
@@ -30,7 +23,6 @@ export const updateProfileSchema = z.object({
   phone: z.string().min(10, "Phone number must be valid").optional(),
 });
 
-// Type inference for usage in Services/Controllers
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

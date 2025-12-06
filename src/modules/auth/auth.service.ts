@@ -8,41 +8,29 @@ import {
   LoginInput,
   UpdateProfileInput,
 } from "./auth.schema.js";
-import eventBus from "../../shared/bus/event-bus.js";
+import eventBus from "../../shared/bus/event-bus.js"; // [NEW] Import Event Bus
 
 class AuthService {
-  /**
-   * Handle Registration Logic
-   */
   async register(input: RegisterInput) {
-    // 1. Check if email exists
+    // 1. Check Email
     const existingUser = await authRepository.findUserByEmail(input.email);
-    if (existingUser) {
-      throw new AppError("Email is already registered", 409);
-    }
+    if (existingUser) throw new AppError("Email is already registered", 409);
 
-    // 2. Check if phone number exists (if provided)
+    // 2. Check Phone
     if (input.phone) {
       const existingPhone = await authRepository.findUserByPhone(input.phone);
-      if (existingPhone) {
+      if (existingPhone)
         throw new AppError("Phone number is already registered", 409);
-      }
     }
 
     // 3. Validate Role
     const role = await authRepository.findRoleByName(input.role);
-    if (!role) {
-      throw new AppError(
-        `Role '${input.role}' not found. Please run database seeder.`,
-        500
-      );
-    }
+    if (!role) throw new AppError(`Role '${input.role}' not found`, 500);
 
     // 4. Hash Password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(input.password, saltRounds);
+    const hashedPassword = await bcrypt.hash(input.password, 10);
 
-    // 5. Create Data via Repository
+    // 5. Create User
     const newUser = await authRepository.createUserWithProfile(
       {
         email: input.email,
@@ -54,15 +42,14 @@ class AuthService {
       input.role as "TENANT" | "LANDLORD"
     );
 
-    // Publish Event to the Bus
-    // "Hey system! A new user just registered!"
+    // 6. [CRITICAL] Publish Event
+    // This triggers Trust Engine (Init Score) and Notification (Welcome Push)
     eventBus.publish("AUTH:USER_REGISTERED", {
       userId: newUser.id,
       email: newUser.email,
       role: input.role as "TENANT" | "LANDLORD",
     });
 
-    // 6. Return DTO
     return {
       id: newUser.id,
       email: newUser.email,
@@ -72,30 +59,20 @@ class AuthService {
     };
   }
 
-  /**
-   * Handle Login Logic
-   */
   async login(input: LoginInput) {
-    // 1. Find User
     const user = await authRepository.findUserByEmail(input.email);
-    if (!user) {
+    if (!user || !(await bcrypt.compare(input.password, user.password))) {
       throw new AppError("Invalid email or password", 401);
     }
 
-    // 2. Verify Password
-    const isPasswordValid = await bcrypt.compare(input.password, user.password);
-    if (!isPasswordValid) {
-      throw new AppError("Invalid email or password", 401);
-    }
-
-    // 3. Generate JWT
     const primaryRole =
       user.roles.length > 0 ? user.roles[0].role.name : "UNKNOWN";
 
+    // [MOBILE OPTIMIZATION] Increased expiry to 30 days
     const token = jwt.sign(
       { id: user.id, email: user.email, role: primaryRole },
       env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "30d" }
     );
 
     return {
@@ -109,45 +86,26 @@ class AuthService {
     };
   }
 
-  /**
-   * Get Current User Profile
-   * Uses Repository to fetch data
-   */
   async getMe(userId: string) {
     const user = await authRepository.findUserByIdWithProfiles(userId);
-
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-
-    // Exclude sensitive data (password)
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    if (!user) throw new AppError("User not found", 404);
+    const { password, ...safeUser } = user;
+    return safeUser;
   }
 
   async updateProfile(userId: string, input: UpdateProfileInput) {
-    // 1. If updating phone, check for uniqueness
     if (input.phone) {
-      const existingUser = await authRepository.findUserByPhone(input.phone);
-
-      // If a user exists with this phone AND it's not the current user -> Conflict
-      if (existingUser && existingUser.id !== userId) {
-        throw new AppError(
-          "Phone number is already in use by another account",
-          409
-        );
+      const existing = await authRepository.findUserByPhone(input.phone);
+      if (existing && existing.id !== userId) {
+        throw new AppError("Phone number already in use", 409);
       }
     }
-
-    // 2. Update Data
-    const updatedUser = await authRepository.updateUser(userId, {
+    const updated = await authRepository.updateUser(userId, {
       name: input.name,
       phone: input.phone,
     });
-
-    // 3. Return result (exclude password)
-    const { password, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    const { password, ...safeUser } = updated;
+    return safeUser;
   }
 }
 
