@@ -8,11 +8,16 @@ import {
 } from "../../shared/utils/response.helper.js";
 
 class PropertiesController {
+  /**
+   * Handle Property Creation (Landlord)
+   */
   create = catchAsync(async (req: Request, res: Response) => {
-    // Files are available in req.files
     const files = req.files as Express.Multer.File[];
 
-    // Auth Middleware ensures req.user exists
+    if (!files || files.length === 0) {
+      throw new AppError("At least one image is required", 400);
+    }
+
     const result = await propertiesService.createProperty(
       req.user!.id,
       req.body,
@@ -23,10 +28,9 @@ class PropertiesController {
   });
 
   /**
-   * Public List with Infinite Scroll
+   * Handle Property Feed (Public)
    */
   getAll = catchAsync(async (req: Request, res: Response) => {
-    // Service now returns { data, meta }
     const { data, meta } = await propertiesService.getAllProperties(req.query);
 
     return sendInfiniteList(
@@ -38,7 +42,7 @@ class PropertiesController {
   });
 
   /**
-   * Public Detail
+   * Handle Single Property View (Public)
    */
   getOne = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;

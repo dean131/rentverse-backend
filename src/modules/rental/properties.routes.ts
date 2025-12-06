@@ -7,20 +7,22 @@ import { verifyToken, requireRole } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 
-// ==========================
-// PUBLIC ROUTES (Search)
-// ==========================
+/**
+ * PUBLIC ROUTES
+ * Anyone can search and view properties.
+ */
 router.get('/', propertiesController.getAll);
 router.get('/:id', propertiesController.getOne);
 
-// ==========================
-// PROTECTED ROUTES (Landlord)
-// ==========================
+/**
+ * PROTECTED ROUTES (LANDLORD ONLY)
+ * Only Verified Landlords can create listings.
+ */
 router.post(
   '/', 
   verifyToken, 
   requireRole('LANDLORD'), 
-  upload.array('images', 5), 
+  upload.array('images', 10), // Allow up to 10 images
   validate(createPropertySchema), 
   propertiesController.create
 );

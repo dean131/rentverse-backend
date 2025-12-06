@@ -1,50 +1,52 @@
 import { z } from 'zod';
 
 export const createPropertySchema = z.object({
-  title: z.string().min(5),
+  title: z.string().min(5, "Title must be at least 5 characters long"),
   description: z.string().optional(),
-  propertyTypeId: z.coerce.number(),
-  listingTypeId: z.coerce.number(),
+  
+  // Coerce numbers because multipart/form-data sends everything as strings
+  propertyTypeId: z.coerce.number().int().positive(),
+  listingTypeId: z.coerce.number().int().positive(),
   price: z.coerce.number().positive(),
   currency: z.string().default('IDR'),
   
-  // Location
-  address: z.string(),
-  city: z.string(),
+  // Location Data
+  address: z.string().min(5, "Address is required"),
+  city: z.string().min(2, "City is required"),
   country: z.string().default('Indonesia'),
   
-  // Coordinates (Optional)
+  // Optional Coordinates
   latitude: z.coerce.number().optional(),
   longitude: z.coerce.number().optional(),
 
-  // Amenities (Optional Array of Strings)
-  // handle '["WIFI", "POOL"]' (JSON string) OR ["WIFI", "POOL"] (raw array)
+  // Amenities: Handle both JSON string (from Postman/Mobile) and raw array
   amenities: z.preprocess((val) => {
     if (typeof val === 'string') {
       try {
         return JSON.parse(val);
       } catch (e) {
-        return [val]; // Fallback for single value
+        return []; 
       }
     }
     return val;
   }, z.array(z.string())).optional().default([]),
 
-  // Relations
+  // Relations: Billing Periods (Monthly, Yearly, etc.)
   billingPeriodIds: z.preprocess((val) => {
     if (typeof val === 'string') return JSON.parse(val);
     return val;
-  }, z.array(z.number())),
+  }, z.array(z.number().int()).nonempty("At least one billing period is required")),
 
+  // EAV Attributes (Dynamic Specs)
   attributes: z.preprocess((val) => {
     if (typeof val === 'string') return JSON.parse(val);
     return val;
   }, z.array(
     z.object({
-      attributeTypeId: z.number(),
-      value: z.any().transform(String),
+      attributeTypeId: z.number().int(),
+      value: z.any().transform(String), // Ensure value is stored as string
     })
-  )),
+  )).optional().default([]),
 });
 
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;

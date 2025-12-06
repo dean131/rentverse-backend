@@ -37,7 +37,7 @@ model User {
   landlordProfile LandlordTrustProfile?
   favorites       UserFavorite[]
   
-  // [NEW] Push Notification Devices
+  //  Push Notification Devices
   devices         UserDevice[]
 
   // Chat Relations
@@ -55,7 +55,7 @@ model User {
   @@index([phone])
 }
 
-// [NEW] Stores FCM Tokens for Mobile Notifications
+//  Stores FCM Tokens for Mobile Notifications
 model UserDevice {
   id           String   @id @default(uuid())
   userId       String
@@ -308,7 +308,7 @@ model TrustEvent {
   baseImpact  Float
   description String?
   
-  // [NEW] Categorize the rule type
+  //  Categorize the rule type
   sourceType  String   @default("AUTOMATED") // AUTOMATED, MANUAL, AI_SUGGESTED
 
   isActive    Boolean  @default(true)
@@ -356,11 +356,11 @@ model TrustLog {
   id            String  @id @default(uuid())
   eventCode     String
   impact        Float
-  scoreSnapshot Float   // [UPDATED] Renamed from scoreSnap for clarity
+  scoreSnapshot Float   //  Renamed from scoreSnap for clarity
   description   String?
   evidenceUrl   String?
 
-  // [NEW] Audit & Context Fields
+  //  Audit & Context Fields
   referenceId   String? // e.g. BookingID, PaymentID
   referenceType String? // "BOOKING", "PAYMENT", "MANUAL", "DISPUTE"
   actor         String  @default("SYSTEM") // "SYSTEM", "ADMIN:<id>", "AI_AGENT"

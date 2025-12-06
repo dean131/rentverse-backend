@@ -22,6 +22,14 @@ export interface EventMap {
     userId: string; 
     role: string 
   };
+
+  // Booking Events
+  'BOOKING:CREATED': {
+    bookingId: string;
+    landlordId: string;
+    tenantId: string;
+    propertyTitle: string;
+  };
 }
 
 export type EventKey = keyof EventMap;

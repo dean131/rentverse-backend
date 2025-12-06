@@ -12,6 +12,16 @@ export const registerNotificationSubscribers = () => {
     );
   });
 
-  // 2. Trust Score Updates (Future)
+  // 2. Booking Alert for Landlord
+  eventBus.subscribe("BOOKING:CREATED", async (payload) => {
+    await notificationService.sendToUser(
+      payload.landlordId,
+      "New Booking Request! 📅",
+      `Someone wants to book ${payload.propertyTitle}. Check your dashboard.`,
+      { type: "BOOKING_REQUEST", bookingId: payload.bookingId }
+    );
+  });
+
+  // Trust Score Updates (Future)
   // eventBus.subscribe("TRUST:SCORE_CHANGED", ...);
 };
