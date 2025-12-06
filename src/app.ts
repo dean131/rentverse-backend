@@ -11,6 +11,7 @@ import propertiesRoutes from './modules/rental/properties.routes.js';
 import notificationRoutes from "./modules/notification/notification.routes.js";
 import kycRoutes from "./modules/kyc/kyc.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
+import paymentRoutes from "./modules/payment/payment.routes.js";
 
 const app: Application = express();
 
@@ -63,6 +64,7 @@ app.use("/api/v1/properties", propertiesRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/kyc", kycRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 
 // Handle 404 - Not Found
 app.use((req: Request, res: Response) => {

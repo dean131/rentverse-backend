@@ -1,7 +1,3 @@
-// type: uploaded file
-// fileName: rentverse-backend/prisma/seeds/seed.ts
-
-// NOTE: We import from the CUSTOM GENERATED PATH defined in schema.prisma
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
@@ -170,7 +166,7 @@ async function seedRolesAndAdmin() {
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@rentverse.com" },
     update: {
-      password: hashedPassword, // Ensure password is updated if changed
+      password: hashedPassword,
       isVerified: true,
     },
     create: {
@@ -197,6 +193,171 @@ async function seedRolesAndAdmin() {
   });
 
   console.log("   > Admin user ready: admin@rentverse.com / admin123");
+}
+
+async function seedDemoUsers() {
+  console.log("👥 Seeding Demo Users (Tenant & Landlord)...");
+
+  const commonPassword = await bcrypt.hash("password123", 10);
+  
+  // Fetch Role IDs
+  const tenantRole = await prisma.role.findUniqueOrThrow({ where: { name: "TENANT" } });
+  const landlordRole = await prisma.role.findUniqueOrThrow({ where: { name: "LANDLORD" } });
+
+  // 1. Create Verified Tenant
+  const tenant = await prisma.user.upsert({
+    where: { email: "tenant@rentverse.com" },
+    update: { password: commonPassword, isVerified: true },
+    create: {
+      email: "tenant@rentverse.com",
+      password: commonPassword,
+      name: "Demo Tenant",
+      phone: "081200000001",
+      isVerified: true, // Email/Phone Verified
+    },
+  });
+
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: tenant.id, roleId: tenantRole.id } },
+    update: {},
+    create: { userId: tenant.id, roleId: tenantRole.id },
+  });
+
+  await prisma.tenantTrustProfile.upsert({
+    where: { userRefId: tenant.id },
+    update: { kyc_status: "VERIFIED", tti_score: 85.0 },
+    create: { 
+      userRefId: tenant.id, 
+      kyc_status: "VERIFIED", 
+      tti_score: 85.0,
+      ktpUrl: "rentverse-private/kyc/demo-tenant-ktp.jpg"
+    },
+  });
+
+  console.log("   > Tenant ready: tenant@rentverse.com / password123");
+
+  // 2. Create Verified Landlord
+  const landlord = await prisma.user.upsert({
+    where: { email: "landlord@rentverse.com" },
+    update: { password: commonPassword, isVerified: true },
+    create: {
+      email: "landlord@rentverse.com",
+      password: commonPassword,
+      name: "Demo Landlord",
+      phone: "081200000002",
+      isVerified: true,
+    },
+  });
+
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: landlord.id, roleId: landlordRole.id } },
+    update: {},
+    create: { userId: landlord.id, roleId: landlordRole.id },
+  });
+
+  await prisma.landlordTrustProfile.upsert({
+    where: { userRefId: landlord.id },
+    update: { kyc_status: "VERIFIED", lrs_score: 90.0 },
+    create: { 
+      userRefId: landlord.id, 
+      kyc_status: "VERIFIED", 
+      lrs_score: 90.0,
+      ktpUrl: "rentverse-private/kyc/demo-landlord-ktp.jpg"
+    },
+  });
+
+  console.log("   > Landlord ready: landlord@rentverse.com / password123");
+}
+
+async function seedDemoProperties() {
+  console.log("🏠 Seeding Demo Properties...");
+
+  const landlord = await prisma.user.findUniqueOrThrow({ where: { email: "landlord@rentverse.com" } });
+  
+  // Fetch Reference IDs
+  const villaType = await prisma.propertyType.findUniqueOrThrow({ where: { slug: "villa" } });
+  const roomType = await prisma.propertyType.findUniqueOrThrow({ where: { slug: "room" } });
+  const rentType = await prisma.listingType.findUniqueOrThrow({ where: { slug: "rent" } });
+  
+  const monthly = await prisma.billingPeriod.findUniqueOrThrow({ where: { slug: "monthly" } });
+  const yearly = await prisma.billingPeriod.findUniqueOrThrow({ where: { slug: "yearly" } });
+
+  const bedroomAttr = await prisma.propertyAttributeType.findUniqueOrThrow({ where: { slug: "bedroom" } });
+  const wifiAttr = await prisma.propertyAttributeType.findUniqueOrThrow({ where: { slug: "electricity" } });
+
+  // 1. Verified Property (Bali Villa)
+  const verifiedProp = await prisma.property.create({
+    data: {
+      landlordId: landlord.id,
+      title: "Sunny Villa in Bali (Verified)",
+      description: "A beautiful 3-bedroom villa with a private pool, perfect for digital nomads.",
+      address: "Jalan Sunset Road No. 88",
+      city: "Bali",
+      country: "Indonesia",
+      latitude: -8.409518,
+      longitude: 115.188919,
+      price: 25000000, // 25 Juta
+      currency: "IDR",
+      isVerified: true, // [CRITICAL]
+      propertyTypeId: villaType.id,
+      listingTypeId: rentType.id,
+      amenities: ["POOL", "WIFI", "AC", "GARDEN"],
+      
+      // Relations
+      allowedBillingPeriods: {
+        create: [{ billingPeriodId: monthly.id }, { billingPeriodId: yearly.id }]
+      },
+      attributes: {
+        create: [
+          { attributeTypeId: bedroomAttr.id, value: "3" },
+          { attributeTypeId: wifiAttr.id, value: "5500" } // 5500 VA
+        ]
+      },
+      images: {
+        create: [
+          { url: "rentverse-public/seeds/villa-1.jpg", isPrimary: true },
+          { url: "rentverse-public/seeds/villa-2.jpg", isPrimary: false }
+        ]
+      }
+    }
+  });
+  console.log(`   > Created Verified Property: ${verifiedProp.title}`);
+
+  // 2. Unverified Property (Jakarta Kost)
+  const unverifiedProp = await prisma.property.create({
+    data: {
+      landlordId: landlord.id,
+      title: "Cozy Studio in Jakarta (Unverified)",
+      description: "Simple room in South Jakarta. Near MRT. Waiting for admin approval.",
+      address: "Jalan Fatmawati Raya No. 10",
+      city: "Jakarta Selatan",
+      country: "Indonesia",
+      latitude: -6.292434,
+      longitude: 106.799677,
+      price: 2500000, // 2.5 Juta
+      currency: "IDR",
+      isVerified: false, // [CRITICAL]
+      propertyTypeId: roomType.id,
+      listingTypeId: rentType.id,
+      amenities: ["WIFI", "AC"],
+      
+      // Relations
+      allowedBillingPeriods: {
+        create: [{ billingPeriodId: monthly.id }]
+      },
+      attributes: {
+        create: [
+          { attributeTypeId: bedroomAttr.id, value: "1" }
+        ]
+      },
+      images: {
+        create: [
+          { url: "rentverse-public/seeds/kost-1.jpg", isPrimary: true }
+        ]
+      }
+    }
+  });
+  console.log(`   > Created Unverified Property: ${unverifiedProp.title}`);
 }
 
 async function seedTrustEvents() {
@@ -237,7 +398,7 @@ async function seedTrustEvents() {
     await prisma.trustEvent.upsert({
       where: { code: e.code },
       update: {
-        description: e.description, // Allow updating description
+        description: e.description,
       },
       create: e,
     });
@@ -247,8 +408,10 @@ async function seedTrustEvents() {
 async function main() {
   try {
     await seedReferences();
-    await seedPermissions(); // New function
+    await seedPermissions();
     await seedRolesAndAdmin();
+    await seedDemoUsers();
+    await seedDemoProperties(); // [NEW] Added this line
     await seedTrustEvents();
 
     console.log("✅ Seeding Completed Successfully.");

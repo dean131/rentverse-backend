@@ -4,31 +4,45 @@
  */
 export interface EventMap {
   // AUTH EVENTS
-  'AUTH:USER_REGISTERED': { 
-    userId: string; 
-    email: string; 
-    role: 'TENANT' | 'LANDLORD' 
+  "AUTH:USER_REGISTERED": {
+    userId: string;
+    email: string;
+    role: "TENANT" | "LANDLORD";
   };
-  
+
   // TRUST EVENTS (Internal or External)
-  'TRUST:SCORE_CHANGED': { 
-    userId: string; 
-    newScore: number; 
-    reason: string 
+  "TRUST:SCORE_CHANGED": {
+    userId: string;
+    newScore: number;
+    reason: string;
   };
 
   // KYC Events
-  'KYC:SUBMITTED': { 
-    userId: string; 
-    role: string 
+  "KYC:SUBMITTED": {
+    userId: string;
+    role: string;
   };
 
   // Booking Events
-  'BOOKING:CREATED': {
+  "BOOKING:CREATED": {
     bookingId: string;
     landlordId: string;
     tenantId: string;
     propertyTitle: string;
+  };
+
+  // Payment Events
+  "PAYMENT:PAID": {
+    invoiceId: string;
+    bookingId: string;
+    tenantId: string;
+    amount: number;
+    paidAt: Date;
+  };
+
+  "PAYMENT:FAILED": {
+    invoiceId: string;
+    reason: string;
   };
 }
 
