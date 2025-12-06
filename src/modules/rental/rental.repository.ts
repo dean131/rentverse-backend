@@ -30,6 +30,7 @@ class RentalRepository {
 
   /**
    * Fetch all Dynamic Attribute Definitions (e.g. Bedroom, WiFi)
+   * These are the EAV keys used for property specs.
    */
   async findAllAttributeTypes() {
     return await prisma.propertyAttributeType.findMany({

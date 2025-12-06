@@ -1,16 +1,18 @@
-import rentalRepository from './rental.repository.js';
+import rentalRepository from "./rental.repository.js";
 
 class RentalService {
   /**
-   * Get all reference data required for the "Create Property" form
+   * Get all reference data required for the "Create Property" form.
+   * Fetches everything in parallel for maximum performance.
    */
   async getAllReferences() {
-    const [propertyTypes, listingTypes, billingPeriods, attributes] = await Promise.all([
-      rentalRepository.findAllPropertyTypes(),
-      rentalRepository.findAllListingTypes(),
-      rentalRepository.findAllBillingPeriods(),
-      rentalRepository.findAllAttributeTypes(),
-    ]);
+    const [propertyTypes, listingTypes, billingPeriods, attributes] =
+      await Promise.all([
+        rentalRepository.findAllPropertyTypes(),
+        rentalRepository.findAllListingTypes(),
+        rentalRepository.findAllBillingPeriods(),
+        rentalRepository.findAllAttributeTypes(),
+      ]);
 
     return {
       propertyTypes,
