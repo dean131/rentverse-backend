@@ -1,16 +1,18 @@
 import midtransClient from 'midtrans-client';
 import { env } from './env.js';
 
-// Initialize Core API (for checking status)
+const isProduction = env.NODE_ENV === 'production';
+
+// Core API: Used for server-to-server status checks (Webhooks)
 export const coreApi = new midtransClient.CoreApi({
-  isProduction: false, // Sandbox Environment
+  isProduction,
   serverKey: env.MIDTRANS_SERVER_KEY,
   clientKey: env.MIDTRANS_CLIENT_KEY,
 });
 
-// Initialize Snap API (for UI payment page)
+// Snap API: Used to generate the payment popup/token
 export const snap = new midtransClient.Snap({
-  isProduction: false,
+  isProduction,
   serverKey: env.MIDTRANS_SERVER_KEY,
   clientKey: env.MIDTRANS_CLIENT_KEY,
 });

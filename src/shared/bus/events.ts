@@ -31,16 +31,16 @@ export interface EventMap {
     propertyTitle: string;
   };
 
-  // Payment Events
-  "PAYMENT:PAID": {
+// Payment Events
+  'PAYMENT:PAID': {
     invoiceId: string;
     bookingId: string;
     tenantId: string;
     amount: number;
     paidAt: Date;
   };
-
-  "PAYMENT:FAILED": {
+  
+  'PAYMENT:FAILED': {
     invoiceId: string;
     reason: string;
   };

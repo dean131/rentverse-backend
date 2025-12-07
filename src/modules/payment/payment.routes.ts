@@ -4,7 +4,7 @@ import { verifyToken, requireRole } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 
-// 1. Generate Payment Link (Tenant Only)
+// Protected: Generate Token (Tenant Only)
 router.post(
   '/pay/:invoiceId',
   verifyToken,
@@ -12,8 +12,8 @@ router.post(
   paymentController.pay
 );
 
-// 2. Webhook (Public - Midtrans calls this)
-// Security: In production, verify the IP or Signature Header here too
+// Public: Webhook Handler
+// Note: Midtrans IPs should ideally be whitelisted in a real firewall
 router.post('/webhook', paymentController.webhook);
 
 export default router;
