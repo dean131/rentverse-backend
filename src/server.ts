@@ -6,6 +6,7 @@ import redis from "./config/redis.js";
 
 import { registerTrustSubscribers } from "./modules/trust/trust.subscribers.js";
 import { registerNotificationSubscribers } from "./modules/notification/notification.subscribers.js"; 
+import { registerFinanceSubscribers } from "./modules/finance/finance.subscribers.js";
 
 /**
  * Start the Express Server
@@ -20,6 +21,7 @@ const startServer = async () => {
     // Initialize Event Subscribers
     registerTrustSubscribers();
     registerNotificationSubscribers();
+    registerFinanceSubscribers();
     logger.info("[INFO] Event Subscribers Registered");
 
     // Start HTTP Listener

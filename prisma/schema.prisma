@@ -1,5 +1,5 @@
 // =========================================================
-// RENTVERSE DATABASE SCHEMA (v4.1 - TRUST & NOTIFICATIONS)
+// RENTVERSE DATABASE SCHEMA (v5.0 - FINANCE & WALLET)
 // =========================================================
 
 generator client {
@@ -19,10 +19,8 @@ model User {
   id              String    @id @default(uuid())
   email           String    @unique
   emailVerifiedAt DateTime?
-
   phone           String?   @unique
   phoneVerifiedAt DateTime?
-
   name            String?
   password        String
   avatarUrl       String?
@@ -37,7 +35,7 @@ model User {
   landlordProfile LandlordTrustProfile?
   favorites       UserFavorite[]
   
-  //  Push Notification Devices
+  // Push Notification Devices
   devices         UserDevice[]
 
   // Chat Relations
@@ -45,6 +43,9 @@ model User {
   landlordChats   ChatRoom[]            @relation("LandlordChats")
   
   bookings        Booking[]
+
+  // [NEW] Finance Relation (Fixes P1012 Error)
+  wallet          Wallet?
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -55,7 +56,7 @@ model User {
   @@index([phone])
 }
 
-//  Stores FCM Tokens for Mobile Notifications
+// Stores FCM Tokens for Mobile Notifications
 model UserDevice {
   id           String   @id @default(uuid())
   userId       String
@@ -76,7 +77,6 @@ model Role {
   id          String           @id @default(uuid())
   name        String           @unique // "TENANT", "LANDLORD", "ADMIN"
   description String?
-
   users       UserRole[]
   permissions RolePermission[]
 
@@ -87,7 +87,6 @@ model Permission {
   id          String           @id @default(uuid())
   action      String           @unique // "trust.score.update", "property.create"
   description String?
-
   roles       RolePermission[]
 
   @@map("permissions")
@@ -308,7 +307,7 @@ model TrustEvent {
   baseImpact  Float
   description String?
   
-  //  Categorize the rule type
+  // Categorize the rule type
   sourceType  String   @default("AUTOMATED") // AUTOMATED, MANUAL, AI_SUGGESTED
 
   isActive    Boolean  @default(true)
@@ -356,18 +355,18 @@ model TrustLog {
   id            String  @id @default(uuid())
   eventCode     String
   impact        Float
-  scoreSnapshot Float   //  Renamed from scoreSnap for clarity
+  scoreSnapshot Float   
   description   String?
   evidenceUrl   String?
 
-  //  Audit & Context Fields
+  // Audit & Context Fields
   referenceId   String? // e.g. BookingID, PaymentID
   referenceType String? // "BOOKING", "PAYMENT", "MANUAL", "DISPUTE"
   actor         String  @default("SYSTEM") // "SYSTEM", "ADMIN:<id>", "AI_AGENT"
   metadata      Json?   // Arbitrary context: { "latency": 250, "ai_confidence": 0.98 }
 
   tenantId   String?
-  tenant     TenantTrustProfile?   @relation(fields: [tenantId], references: [id])
+  tenant     TenantTrustProfile? @relation(fields: [tenantId], references: [id])
   landlordId String?
   landlord   LandlordTrustProfile? @relation(fields: [landlordId], references: [id])
 
@@ -414,4 +413,64 @@ model ChatMessage {
   @@index([roomId])
   @@index([createdAt])
   @@map("chat_messages")
+}
+
+// =========================================================
+// 6. MODULE: FINANCE (WALLET & LEDGER)
+// =========================================================
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  
+  balance   Decimal  @default(0) @db.Decimal(15, 2)
+  currency  String   @default("IDR")
+  
+  transactions WalletTransaction[]
+  payouts      PayoutRequest[]
+
+  updatedAt DateTime @updatedAt
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  
+  amount      Decimal  @db.Decimal(15, 2)
+  type        String   // CREDIT (Income), DEBIT (Withdrawal)
+  category    String   // RENT_PAYMENT, PLATFORM_FEE, PAYOUT, REFUND
+  
+  description String?
+  referenceId String?  // ID of Invoice or PayoutRequest
+  
+  balanceAfter Decimal @db.Decimal(15, 2) // Snapshot of balance for audit
+
+  createdAt   DateTime @default(now())
+
+  @@index([walletId])
+  @@map("wallet_transactions")
+}
+
+model PayoutRequest {
+  id          String   @id @default(uuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  
+  amount      Decimal  @db.Decimal(15, 2)
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, PROCESSED
+  
+  bankName    String
+  accountNo   String
+  accountName String
+
+  processedAt DateTime?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("payout_requests")
 }
