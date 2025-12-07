@@ -44,6 +44,8 @@ model User {
   
   bookings        Booking[]
 
+  properties      Property[]  @relation("LandlordProperties")
+
   // [NEW] Finance Relation (Fixes P1012 Error)
   wallet          Wallet?
 
@@ -170,9 +172,12 @@ model PropertyAttribute {
 
 model Property {
   id          String  @id @default(uuid())
-  landlordId  String
+
   title       String
   description String? @db.Text
+
+  landlordId  String
+  landlord    User    @relation("LandlordProperties", fields: [landlordId], references: [id])
 
   propertyTypeId Int
   propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])

@@ -118,8 +118,19 @@ class PropertiesRepository {
         propertyType: true,
         listingType: true,
         allowedBillingPeriods: { include: { billingPeriod: true } },
-        attributes: { include: { attributeType: true } },
-        // Future: Include Landlord Profile here
+        attributes: { include: { attributeType: true } },        
+        landlord: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            createdAt: true, 
+            isVerified: true,
+            landlordProfile: { 
+              select: { lrs_score: true, response_rate: true }
+            }
+          }
+        }
       },
     });
   }

@@ -6,19 +6,33 @@ import { env } from "../../config/env.js";
 
 class PropertiesService {
   /**
-   * Helper: Transforms DB Image Paths (Relative) to Public URLs (Absolute).
-   * This makes the database portable (doesn't store hardcoded domains).
+   * Helper: Transforms DB Paths to Public URLs
+   * Handles both Property Images AND Landlord Avatar
    */
   private transformProperty(property: any) {
     if (!property) return null;
+
+    // 1. Transform Property Images
+    const images = property.images.map((img: any) => ({
+      ...img,
+      url: img.url.startsWith("http") ? img.url : `${env.MINIO_URL}/${img.url}`,
+    }));
+
+    // 2. Transform Landlord Avatar (if present)
+    let landlord = property.landlord;
+    if (landlord && landlord.avatarUrl) {
+      landlord = {
+        ...landlord,
+        avatarUrl: landlord.avatarUrl.startsWith("http")
+          ? landlord.avatarUrl
+          : `${env.MINIO_URL}/${landlord.avatarUrl}`,
+      };
+    }
+
     return {
       ...property,
-      images: property.images.map((img: any) => ({
-        ...img,
-        // DB stores: "rentverse-public/properties/abc.jpg"
-        // API returns: "http://localhost:9000/rentverse-public/properties/abc.jpg"
-        url: img.url.startsWith('http') ? img.url : `${env.MINIO_URL}/${img.url}`,
-      })),
+      images,
+      landlord, // Returns the original landlord object with updated avatarUrl
     };
   }
 
@@ -30,34 +44,30 @@ class PropertiesService {
     input: CreatePropertyInput,
     files: Express.Multer.File[]
   ) {
-    // 1. Upload Images to MinIO (Parallel Upload)
     const uploadPromises = files.map((file) =>
       storageService.uploadFile(file, `properties/${landlordId}`)
     );
     const imageUrls = await Promise.all(uploadPromises);
 
-    // 2. Save to Database
     const property = await propertiesRepository.create(
       landlordId,
       input,
       imageUrls
     );
 
-    // 3. Return transformed data
     return this.transformProperty(property);
   }
 
   /**
-   * Get Property Feed (Search & Filter).
+   * Get Property Feed.
    */
   async getAllProperties(query: any) {
     const limit = Number(query.limit) || 10;
     const cursor = query.cursor as string | undefined;
 
-    // Build Filters
     const where: Prisma.PropertyWhereInput = {
       deletedAt: null,
-      isVerified: true, // Only show verified listings
+      isVerified: true,
     };
 
     if (query.search) {
@@ -75,13 +85,13 @@ class PropertiesService {
       if (query.maxPrice) where.price.lte = Number(query.maxPrice);
     }
 
-    // Build Sort
-    let orderBy: Prisma.PropertyOrderByWithRelationInput = { createdAt: "desc" };
+    let orderBy: Prisma.PropertyOrderByWithRelationInput = {
+      createdAt: "desc",
+    };
     if (query.sortBy === "price_asc") orderBy = { price: "asc" };
     if (query.sortBy === "price_desc") orderBy = { price: "desc" };
     if (query.sortBy === "oldest") orderBy = { createdAt: "asc" };
 
-    // Fetch Data
     const { total, properties } = await propertiesRepository.findAll(
       where,
       limit,
@@ -89,13 +99,11 @@ class PropertiesService {
       orderBy
     );
 
-    // Determine Next Cursor
     let nextCursor: string | null = null;
     if (properties.length === limit) {
       nextCursor = properties[properties.length - 1].id;
     }
 
-    // Transform URLs
     const data = properties.map((p) => this.transformProperty(p));
 
     return {
