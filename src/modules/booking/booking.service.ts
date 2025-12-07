@@ -1,51 +1,81 @@
-import bookingRepository from './booking.repository.js';
-import prisma from '../../config/prisma.js'; // Accessing other tables for read
-import AppError from '../../shared/utils/AppError.js';
-import eventBus from '../../shared/bus/event-bus.js';
-import { CreateBookingInput } from './booking.schema.js';
+import { Prisma } from "@prisma/client";
+import bookingRepository from "./booking.repository.js";
+import prisma from "../../config/prisma.js";
+import AppError from "../../shared/utils/AppError.js";
+import eventBus from "../../shared/bus/event-bus.js";
+import { CreateBookingInput } from "./booking.schema.js";
+import { env } from "../../config/env.js";
 
 class BookingService {
+  /**
+   * Create a new Booking Request.
+   * Returns a snapshot of the reservation for the "Review & Pay" screen.
+   */
   async createBooking(tenantId: string, input: CreateBookingInput) {
-    // 1. Validate Tenant KYC Status
+    // ---------------------------------------------------------
+    // 1. Validation Phase
+    // ---------------------------------------------------------
+
+    // A. Validate Tenant KYC
     const tenantProfile = await prisma.tenantTrustProfile.findUnique({
       where: { userRefId: tenantId },
     });
 
-    if (!tenantProfile || tenantProfile.kyc_status !== 'VERIFIED') {
-      // NOTE: In Dev/Test, you might need to manually set kyc_status='VERIFIED' in DB
-      throw new AppError('You must complete KYC verification to book a property.', 403);
+    if (!tenantProfile || tenantProfile.kyc_status !== "VERIFIED") {
+      throw new AppError(
+        "You must complete KYC verification to book a property.",
+        403
+      );
     }
 
-    // 2. Fetch Property & Billing Period Details
+    // B. Fetch Property (with Billing Rules & Primary Image)
     const property = await prisma.property.findUnique({
       where: { id: input.propertyId },
-      include: { allowedBillingPeriods: true },
+      include: {
+        allowedBillingPeriods: true,
+        images: {
+          where: { isPrimary: true },
+          take: 1,
+        },
+      },
     });
 
-    if (!property) throw new AppError('Property not found', 404);
-    if (property.landlordId === tenantId) throw new AppError('You cannot book your own property', 400);
+    if (!property) throw new AppError("Property not found", 404);
+    if (property.landlordId === tenantId)
+      throw new AppError("You cannot book your own property", 400);
 
+    // C. Validate Billing Period
     const billingPeriod = await prisma.billingPeriod.findUnique({
       where: { id: input.billingPeriodId },
     });
 
-    if (!billingPeriod) throw new AppError('Invalid billing period', 400);
+    if (!billingPeriod) throw new AppError("Invalid billing period", 400);
 
-    // 3. Check if this property actually allows this billing period
+    // D. Check if Property allows this Billing Period
     const isAllowed = property.allowedBillingPeriods.some(
       (bp) => bp.billingPeriodId === billingPeriod.id
     );
-    if (!isAllowed) throw new AppError('This billing period is not allowed for this property', 400);
+    if (!isAllowed)
+      throw new AppError(
+        "This billing period is not allowed for this property",
+        400
+      );
 
-    // 4. Calculate Dates & Price
-    // Logic: Price is treated as "Monthly Base Rate" * Duration Months
+    // ---------------------------------------------------------
+    // 2. Calculation Phase
+    // ---------------------------------------------------------
+
+    // Calculate Dates
     const startDate = new Date(input.startDate);
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + billingPeriod.durationMonths);
 
+    // Calculate Total Price (Base Price * Months)
     const totalAmount = Number(property.price) * billingPeriod.durationMonths;
 
-    // 5. Check Availability (Prevent Double Booking)
+    // ---------------------------------------------------------
+    // 3. Availability Check
+    // ---------------------------------------------------------
     const conflict = await bookingRepository.findConflictingBookings(
       input.propertyId,
       startDate,
@@ -53,33 +83,73 @@ class BookingService {
     );
 
     if (conflict) {
-      throw new AppError('Property is not available for the selected dates.', 409);
+      throw new AppError(
+        "Property is not available for the selected dates.",
+        409
+      );
     }
 
-    // 6. Execute Transaction
-    const { booking, invoice } = await bookingRepository.createBookingWithInvoice({
-      tenantId,
-      propertyId: input.propertyId,
-      billingPeriodId: input.billingPeriodId,
-      startDate,
-      endDate,
-      nextPaymentDate: endDate, // Simplify: Next payment is at end of current period
-      amount: totalAmount,
-    });
+    // ---------------------------------------------------------
+    // 4. Execution Phase (Atomic Transaction)
+    // ---------------------------------------------------------
+    const { booking, invoice } =
+      await bookingRepository.createBookingWithInvoice({
+        tenantId,
+        propertyId: input.propertyId,
+        billingPeriodId: input.billingPeriodId,
+        startDate,
+        endDate,
+        nextPaymentDate: endDate, // Next payment due at end of period
+        amount: totalAmount,
+      });
 
-    // 7. Emit Event (Notify Landlord)
-    eventBus.publish('BOOKING:CREATED', {
+    // ---------------------------------------------------------
+    // 5. Post-Process (Notifications)
+    // ---------------------------------------------------------
+    eventBus.publish("BOOKING:CREATED", {
       bookingId: booking.id,
       landlordId: booking.property.landlordId,
       tenantId: tenantId,
       propertyTitle: booking.property.title,
     });
 
-    return { 
-      bookingId: booking.id, 
+    // ---------------------------------------------------------
+    // 6. Response Construction (For Mobile UI)
+    // ---------------------------------------------------------
+
+    // Resolve Image URL
+    let imageUrl = null;
+    if (property.images.length > 0) {
+      const rawUrl = property.images[0].url;
+      imageUrl = rawUrl.startsWith("http")
+        ? rawUrl
+        : `${env.MINIO_URL}/${rawUrl}`;
+    }
+
+    return {
+      bookingId: booking.id,
       invoiceId: invoice.id,
-      status: booking.status,
-      amount: totalAmount 
+      status: booking.status, // "PENDING_PAYMENT"
+
+      // Transaction Details
+      amount: totalAmount,
+      currency: property.currency,
+
+      // Property Snapshot (for Review Screen)
+      property: {
+        id: property.id,
+        title: property.title,
+        image: imageUrl,
+        address: property.city, // Simple location context
+      },
+
+      // Reservation Details
+      checkIn: booking.startDate,
+      checkOut: booking.endDate,
+      billingPeriod: billingPeriod.label,
+
+      // Payment Urgency (e.g., 2 hours from now)
+      paymentDeadline: new Date(Date.now() + 2 * 60 * 60 * 1000),
     };
   }
 }
