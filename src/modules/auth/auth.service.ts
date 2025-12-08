@@ -20,7 +20,7 @@ class AuthService {
   private async generateTokens(userId: string, email: string, role: string) {
     // 1. Access Token (Stateless, 15 Minutes)
     const accessToken = jwt.sign({ id: userId, email, role }, env.JWT_SECRET, {
-      expiresIn: "15m",
+      expiresIn: "60m",
     });
 
     // 2. Refresh Token (Stateful, 30 Days)

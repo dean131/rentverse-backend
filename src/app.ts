@@ -1,9 +1,9 @@
+import { env } from "./config/env.js";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from 'express-rate-limit';
 
-import { env } from "./config/env.js";
 import errorHandler from "./middleware/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import rentalRoutes from './modules/rental/rental.routes.js';
@@ -13,6 +13,7 @@ import kycRoutes from "./modules/kyc/kyc.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import paymentRoutes from "./modules/payment/payment.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
+import chatRoutes from "./modules/chat/chat.routes.js";
 
 const app: Application = express();
 
@@ -67,6 +68,7 @@ app.use("/api/v1/kyc", kycRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/finance", financeRoutes);
+app.use("/api/v1/chats", chatRoutes);
 
 // Handle 404 - Not Found
 app.use((req: Request, res: Response) => {

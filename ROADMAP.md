@@ -1,4 +1,4 @@
-# 🗺️ Rentverse Project Roadmap (v2.4 - Live Status)
+# 🗺️ Rentverse Project Roadmap (v2.5 - Live Status)
 
 **Core Shift:** Mobile-First for Users (Tenant/Landlord) | Web-Based for Admin Operations.
 **Focus:** Secure Identity, Trust Engine Accuracy, and High-Performance Mobile Feed.
@@ -34,7 +34,7 @@
 ---
 
 ## 🏠 Phase 2: Rental Marketplace API (Week 3)
-**Status:** 🚧 **IN PROGRESS** (Feed done, Engagement pending)
+**Status:** ✅ **COMPLETE**
 
 - [x] **Property Management**
   - [x] `POST /properties`: Create listing with images (Public Bucket).
@@ -42,13 +42,14 @@
   - [x] **Portable Media:** DB stores relative paths; API returns full URLs dynamically.
 - [x] **Mobile Search Feed**
   - [x] `GET /properties`: **Refactored to Infinite Scroll** (Cursor-based pagination).
-  - [x] **Detail View:** `GET /properties/:id` implemented.
+  - [x] **Detail View:** `GET /properties/:id` implemented (Includes Landlord Profile).
   - [x] **Filters:** Search by City, Title, Price.
 - [ ] **Engagement**
   - [ ] `POST /favorites/:id`: "Like" functionality.
   - [ ] `GET /favorites`: List liked properties.
-- [ ] **Booking Request**
-  - [ ] `POST /bookings`: Initiate a rental request (Requires KYC Verified status).
+- [x] **Booking System**
+  - [x] `POST /bookings`: Create request (Returns details for "Review & Pay" screen).
+  - [x] `GET /bookings`: "My Bookings" list with Search, Filter & Cursor Pagination.
 
 ---
 
@@ -60,8 +61,8 @@
 - [x] **Scoring Infrastructure**
   - [x] `TrustService` initialized.
   - [x] **Event Listener:** `AUTH:USER_REGISTERED` initializes score.
-- [ ] **Advanced Logic**
-  - [ ] **Payment Listener:** Update TTI on payment success/failure.
+- [x] **Advanced Logic**
+  - [x] **Payment Listener:** `PAYMENT:PAID` event rewards Tenant (+2.0 TTI).
   - [ ] **Chat Listener:** Update LRS on fast response.
 - [ ] **Trust Dashboard**
   - [ ] `GET /trust/history`: API for the mobile score graph.
@@ -78,11 +79,29 @@
 ---
 
 ## 💸 Phase 5: Finance & Escrow
-**Status:** 📅 **PLANNED** (Week 6)
+**Status:** ✅ **COMPLETE**
 
-- [ ] Midtrans Snap Integration.
-- [ ] Wallet System (Ledger).
-- [ ] Payout Requests.
+- [x] **Payment Gateway (Midtrans)**
+  - [x] `POST /payments/pay/:invoiceId`: Generate Snap Token.
+  - [x] `POST /payments/webhook`: Handle Status Updates (Paid/Expired).
+- [x] **Wallet System (Ledger)**
+  - [x] `Wallet` & `WalletTransaction` Schema.
+  - [x] **Rent Split Logic:** Automates 5% Platform Fee deduction.
+  - [x] `GET /finance/wallet`: View Balance & History.
+- [x] **Payouts**
+  - [x] `POST /finance/payout`: Request withdrawal (Locks funds).
+
+---
+
+## 💬 Phase 5.5: Real-Time Communication
+**Status:** 🚀 **NEXT UP**
+
+- [ ] **Socket.IO Server:** Auth middleware & Connection handling.
+- [ ] **Chat Module:**
+  - [ ] `POST /chats/start`: Initiate conversation (Tenant -> Landlord).
+  - [ ] `GET /chats`: List conversation history.
+  - [ ] `GET /chats/:roomId/messages`: Load chat logs.
+- [ ] **WhatsApp Integration (Evolution API):** Send OTPs & Alerts (Deferred).
 
 ---
 

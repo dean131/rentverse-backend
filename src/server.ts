@@ -1,74 +1,61 @@
+import http from "http";
 import app from "./app.js";
 import { env } from "./config/env.js";
 import prisma from "./config/prisma.js";
 import logger from "./config/logger.js";
 import redis from "./config/redis.js";
+import socketService from "./shared/services/socket.service.js";
 
 import { registerTrustSubscribers } from "./modules/trust/trust.subscribers.js";
 import { registerNotificationSubscribers } from "./modules/notification/notification.subscribers.js"; 
 import { registerFinanceSubscribers } from "./modules/finance/finance.subscribers.js";
 
-/**
- * Start the Express Server
- */
 const startServer = async () => {
   try {
-    // Verify Database Connection
-    // Executing a raw query ensures the connection pool is active.
     await prisma.$queryRaw`SELECT 1`;
     logger.info("[INFO] Database Connected Successfully");
 
-    // Initialize Event Subscribers
     registerTrustSubscribers();
     registerNotificationSubscribers();
     registerFinanceSubscribers();
     logger.info("[INFO] Event Subscribers Registered");
 
-    // Start HTTP Listener
-    const server = app.listen(env.PORT, () => {
+    // Create HTTP Server explicitly
+    const httpServer = http.createServer(app);
+
+    // Initialize Socket.IO
+    socketService.init(httpServer);
+
+    // Listen on httpServer, NOT app
+    const server = httpServer.listen(env.PORT, () => {
       logger.info(`[INFO] Server running on port ${env.PORT}`);
       logger.info(`[INFO] Environment: ${env.NODE_ENV}`);
     });
 
-    /**
-     * Graceful Shutdown Logic
-     * Ensures we close DB/Cache connections properly when Docker stops the container.
-     */
     const shutdown = async (signal: string) => {
       logger.info(`[INFO] ${signal} received. Shutting down gracefully...`);
 
       server.close(async () => {
         logger.info("[INFO] HTTP Server closed.");
-
         try {
           await prisma.$disconnect();
           logger.info("[INFO] Database Disconnected");
-
           redis.disconnect();
           logger.info("[INFO] Redis Disconnected");
-
           process.exit(0);
         } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          logger.error("[ERROR] Error during shutdown:", {
-            error: errorMessage,
-          });
+          logger.error("[ERROR] Error during shutdown:", err);
           process.exit(1);
         }
       });
     };
 
-    // Listen for termination signals (e.g., Ctrl+C or Docker Stop)
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("[ERROR] Startup Error: Failed to initialize application.", {
-      error: errorMessage,
-    });
-    process.exit(1); // Exit with failure code
+    logger.error("[ERROR] Startup Error:", error);
+    process.exit(1);
   }
 };
 
-// Execute Startup
 startServer();
