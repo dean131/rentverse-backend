@@ -1,5 +1,5 @@
 // =========================================================
-// RENTVERSE DATABASE SCHEMA (v5.0 - FINANCE & WALLET)
+// RENTVERSE DATABASE SCHEMA (v5.5 - FINAL REVERTED)
 // =========================================================
 
 generator client {
@@ -12,7 +12,7 @@ datasource db {
 }
 
 // =========================================================
-// 1. MODULE: IDENTITY & ACCESS (RBAC + User Profile)
+// 1. MODULE: IDENTITY & ACCESS
 // =========================================================
 
 model User {
@@ -25,28 +25,19 @@ model User {
   password        String
   avatarUrl       String?
   isVerified      Boolean   @default(false)
-
-  // Flexible Metadata (Preferences, Social Links, etc.)
   metadata        Json?
 
-  // Relations
   roles           UserRole[]
   tenantProfile   TenantTrustProfile?
   landlordProfile LandlordTrustProfile?
   favorites       UserFavorite[]
-  
-  // Push Notification Devices
   devices         UserDevice[]
 
-  // Chat Relations
   tenantChats     ChatRoom[]            @relation("TenantChats")
   landlordChats   ChatRoom[]            @relation("LandlordChats")
   
   bookings        Booking[]
-
-  properties      Property[]  @relation("LandlordProperties")
-
-  // [NEW] Finance Relation (Fixes P1012 Error)
+  properties      Property[]            @relation("LandlordProperties")
   wallet          Wallet?
 
   createdAt       DateTime  @default(now())
@@ -55,29 +46,24 @@ model User {
 
   @@map("users")
   @@index([email])
-  @@index([phone])
 }
 
-// Stores FCM Tokens for Mobile Notifications
 model UserDevice {
   id           String   @id @default(uuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  fcmToken     String   @unique // Firebase Cloud Messaging Token
-  platform     String   // "ANDROID", "IOS", "WEB"
-  deviceModel  String?  // e.g. "iPhone 13"
-  
+  fcmToken     String   @unique
+  platform     String   
+  deviceModel  String?  
   lastActiveAt DateTime @default(now())
   createdAt    DateTime @default(now())
 
-  @@index([userId])
   @@map("user_devices")
 }
 
 model Role {
   id          String           @id @default(uuid())
-  name        String           @unique // "TENANT", "LANDLORD", "ADMIN"
+  name        String           @unique 
   description String?
   users       UserRole[]
   permissions RolePermission[]
@@ -87,7 +73,7 @@ model Role {
 
 model Permission {
   id          String           @id @default(uuid())
-  action      String           @unique // "trust.score.update", "property.create"
+  action      String           @unique
   description String?
   roles       RolePermission[]
 
@@ -115,7 +101,7 @@ model RolePermission {
 }
 
 // =========================================================
-// 2. MODULE: RENTAL & MARKETPLACE (Normalized EAV)
+// 2. MODULE: RENTAL & MARKETPLACE
 // =========================================================
 
 model PropertyType {
@@ -172,12 +158,11 @@ model PropertyAttribute {
 
 model Property {
   id          String  @id @default(uuid())
-
-  title       String
-  description String? @db.Text
-
   landlordId  String
   landlord    User    @relation("LandlordProperties", fields: [landlordId], references: [id])
+  
+  title       String
+  description String? @db.Text
 
   propertyTypeId Int
   propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
@@ -193,8 +178,9 @@ model Property {
 
   listingTypeId Int
   listingType   ListingType @relation(fields: [listingTypeId], references: [id])
+  
   price         Decimal     @db.Decimal(15, 2)
-  currency      String      @default("IDR")
+  currency      String      @default("IDR") // [REVERTED] Just a string
   isVerified    Boolean     @default(false)
 
   metadata Json?
@@ -211,8 +197,6 @@ model Property {
 
   @@index([city])
   @@index([price])
-  @@index([landlordId])
-  @@index([deletedAt])
   @@map("properties")
 }
 
@@ -245,7 +229,6 @@ model UserFavorite {
   createdAt  DateTime @default(now())
 
   @@unique([userId, propertyId])
-  @@index([userId])
   @@map("user_favorites")
 }
 
@@ -267,7 +250,7 @@ model Booking {
   startDate       DateTime
   endDate         DateTime?
   nextPaymentDate DateTime
-  status          String // ACTIVE, CANCELLED, COMPLETED, PENDING_PAYMENT
+  status          String 
 
   invoices Invoice[]
 
@@ -276,7 +259,6 @@ model Booking {
   deletedAt DateTime?
 
   @@index([tenantId])
-  @@index([propertyId])
   @@map("bookings")
 }
 
@@ -284,10 +266,13 @@ model Invoice {
   id              String    @id @default(uuid())
   bookingId       String
   booking         Booking   @relation(fields: [bookingId], references: [id])
+  
   amount          Decimal   @db.Decimal(15, 2)
+  currency        String    @default("IDR") // [REVERTED] Just a string
+
   dueDate         DateTime
   paidAt          DateTime?
-  status          String    // PENDING, PAID, OVERDUE, CANCELLED
+  status          String    
   paymentLink     String?
   snapToken       String?
   midtransOrderId String?   @unique
@@ -295,13 +280,11 @@ model Invoice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([bookingId])
-  @@index([status])
   @@map("invoices")
 }
 
 // =========================================================
-// 4. MODULE: TRUST ENGINE (SCORING & KYC)
+// 4. MODULE: TRUST ENGINE
 // =========================================================
 
 model TrustEvent {
@@ -311,10 +294,7 @@ model TrustEvent {
   role        String
   baseImpact  Float
   description String?
-  
-  // Categorize the rule type
-  sourceType  String   @default("AUTOMATED") // AUTOMATED, MANUAL, AI_SUGGESTED
-
+  sourceType  String   @default("AUTOMATED")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -327,14 +307,11 @@ model TenantTrustProfile {
   userRefId String @unique
   user      User   @relation(fields: [userRefId], references: [id])
   tti_score Float  @default(50.0)
-
   kyc_status    String    @default("PENDING")
   ktpUrl        String?
   ktpVerifiedAt DateTime?
   selfieUrl     String?
-
   payment_faults Int @default(0)
-
   logs TrustLog[]
 
   @@map("tenant_profiles")
@@ -346,11 +323,9 @@ model LandlordTrustProfile {
   user          User   @relation(fields: [userRefId], references: [id])
   lrs_score     Float  @default(50.0)
   response_rate Float  @default(0.0)
-
   kyc_status    String    @default("PENDING")
   ktpUrl        String?
   ktpVerifiedAt DateTime?
-
   logs TrustLog[]
 
   @@map("landlord_profiles")
@@ -363,12 +338,10 @@ model TrustLog {
   scoreSnapshot Float   
   description   String?
   evidenceUrl   String?
-
-  // Audit & Context Fields
-  referenceId   String? // e.g. BookingID, PaymentID
-  referenceType String? // "BOOKING", "PAYMENT", "MANUAL", "DISPUTE"
-  actor         String  @default("SYSTEM") // "SYSTEM", "ADMIN:<id>", "AI_AGENT"
-  metadata      Json?   // Arbitrary context: { "latency": 250, "ai_confidence": 0.98 }
+  referenceId   String? 
+  referenceType String? 
+  actor         String  @default("SYSTEM") 
+  metadata      Json?   
 
   tenantId   String?
   tenant     TenantTrustProfile? @relation(fields: [tenantId], references: [id])
@@ -377,14 +350,11 @@ model TrustLog {
 
   createdAt DateTime @default(now())
 
-  @@index([tenantId])
-  @@index([landlordId])
-  @@index([createdAt])
   @@map("trust_logs")
 }
 
 // =========================================================
-// 5. MODULE: CHAT & COMMUNICATION
+// 5. MODULE: CHAT
 // =========================================================
 
 model ChatRoom {
@@ -400,9 +370,6 @@ model ChatRoom {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  @@index([tenantId])
-  @@index([landlordId])
-  @@index([lastMessageAt])
   @@map("chat_rooms")
 }
 
@@ -415,13 +382,11 @@ model ChatMessage {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  @@index([roomId])
-  @@index([createdAt])
   @@map("chat_messages")
 }
 
 // =========================================================
-// 6. MODULE: FINANCE (WALLET & LEDGER)
+// 6. MODULE: FINANCE
 // =========================================================
 
 model Wallet {
@@ -430,7 +395,7 @@ model Wallet {
   user      User     @relation(fields: [userId], references: [id])
   
   balance   Decimal  @default(0) @db.Decimal(15, 2)
-  currency  String   @default("IDR")
+  currency  String   @default("IDR") // [REVERTED] Just a string
   
   transactions WalletTransaction[]
   payouts      PayoutRequest[]
@@ -443,19 +408,14 @@ model WalletTransaction {
   id          String   @id @default(uuid())
   walletId    String
   wallet      Wallet   @relation(fields: [walletId], references: [id])
-  
   amount      Decimal  @db.Decimal(15, 2)
-  type        String   // CREDIT (Income), DEBIT (Withdrawal)
-  category    String   // RENT_PAYMENT, PLATFORM_FEE, PAYOUT, REFUND
-  
+  type        String   
+  category    String   
   description String?
-  referenceId String?  // ID of Invoice or PayoutRequest
-  
-  balanceAfter Decimal @db.Decimal(15, 2) // Snapshot of balance for audit
-
+  referenceId String?  
+  balanceAfter Decimal @db.Decimal(15, 2)
   createdAt   DateTime @default(now())
 
-  @@index([walletId])
   @@map("wallet_transactions")
 }
 
@@ -463,17 +423,13 @@ model PayoutRequest {
   id          String   @id @default(uuid())
   walletId    String
   wallet      Wallet   @relation(fields: [walletId], references: [id])
-  
   amount      Decimal  @db.Decimal(15, 2)
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, PROCESSED
-  
+  status      String   @default("PENDING") 
   bankName    String
   accountNo   String
   accountName String
-
   processedAt DateTime?
   notes       String?
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

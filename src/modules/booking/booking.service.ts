@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import bookingRepository from "./booking.repository.js";
 import prisma from "../../config/prisma.js";
 import AppError from "../../shared/utils/AppError.js";
@@ -150,6 +149,79 @@ class BookingService {
 
       // Payment Urgency (e.g., 2 hours from now)
       paymentDeadline: new Date(Date.now() + 2 * 60 * 60 * 1000),
+    };
+  }
+
+  /**
+   * Get "My Bookings" list.
+   * Adapts response based on whether user is Tenant or Landlord.
+   */
+  async getMyBookings(userId: string, role: string, query: any) {
+    const limit = Number(query.limit) || 10;
+    const cursor = query.cursor as string | undefined;
+
+    // Extract Filters
+    const filters = {
+      search: query.search as string,
+      status: query.status as string, // "ACTIVE", "PENDING_PAYMENT", etc.
+    };
+
+    const { total, bookings } = await bookingRepository.findAllByUser(
+      userId,
+      role,
+      limit,
+      cursor,
+      filters
+    );
+
+    let nextCursor: string | null = null;
+    if (bookings.length === limit) {
+      nextCursor = bookings[bookings.length - 1].id;
+    }
+
+    const data = bookings.map((booking) => {
+      const property = booking.property;
+      let imageUrl = null;
+      if (property.images.length > 0) {
+        const rawUrl = property.images[0].url;
+        imageUrl = rawUrl.startsWith("http")
+          ? rawUrl
+          : `${env.MINIO_URL}/${rawUrl}`;
+      }
+
+      const invoice = booking.invoices[0];
+
+      return {
+        id: booking.id,
+        status: booking.status,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        property: {
+          id: property.id,
+          title: property.title,
+          city: property.city,
+          image: imageUrl,
+        },
+        payment: invoice
+          ? {
+              invoiceId: invoice.id,
+              status: invoice.status,
+              amount: Number(invoice.amount),
+              currency: invoice.currency,
+            }
+          : null,
+        createdAt: booking.createdAt,
+      };
+    });
+
+    return {
+      data,
+      meta: {
+        total,
+        limit,
+        nextCursor,
+        hasMore: !!nextCursor,
+      },
     };
   }
 }

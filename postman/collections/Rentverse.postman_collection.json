@@ -1,0 +1,707 @@
+{
+  "info": {
+    "_postman_id": "f143c46c-5c96-4af7-9a53-c1b7c9d031f2",
+    "name": "Rentverse",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "id": "70ac5018-0aac-4fd9-ae7a-dbcab14deff3",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tenant1@rentverse.com\",\n  \"password\": \"password123\",\n  \"name\": \"Asep Tenant\",\n  \"role\": \"TENANT\",\n  \"phone\": \"081234567891\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "### 📄 Endpoint: User Registration\n\n**Description:**\nThis endpoint creates a new user account. Users must choose a role (`TENANT` or `LANDLORD`).\n**Note:** Registration does **not** return an access token. The user must call the `/auth/login` endpoint immediately after registration to authenticate.\n\n  * **Method:** `POST`\n  * **URL:** `{{base_url}}/auth/register`\n  * **Authentication:** None (Public Endpoint)\n\n-----\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| :--- | :--- | :--- |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n```json\n{\n  \"email\": \"tenant@example.com\",\n  \"password\": \"securePassword123!\",\n  \"name\": \"Jane Doe\",\n  \"phone\": \"081234567890\",\n  \"role\": \"TENANT\"\n}\n```\n\n| Key | Type | Requirement | Description |\n| :--- | :--- | :--- | :--- |\n| `email` | String | **Mandatory** | Valid email address. Must be unique. |\n| `password` | String | **Mandatory** | Min 8 characters. |\n| `name` | String | **Mandatory** | Min 3 characters. |\n| `role` | Enum | **Mandatory** | Must be either `\"TENANT\"` or `\"LANDLORD\"`. |\n| `phone` | String | **Optional** | Min 10 characters. Must be unique if provided. |\n\n-----\n\n#### ✅ Response Examples\n\n**1. Success (201 Created)**\n*User created successfully. Returns the user profile (without tokens).*\n\n```json\n{\n    \"status\": \"success\",\n    \"message\": \"User registered successfully\",\n    \"data\": {\n        \"id\": \"user-uuid-67890\",\n        \"email\": \"tenant@example.com\",\n        \"name\": \"Jane Doe\",\n        \"role\": \"TENANT\",\n        \"createdAt\": \"2025-12-07T10:00:00.000Z\"\n    }\n}\n```\n\n**2. Error: Validation Failure (400 Bad Request)**\n*Scenario: Password too short or invalid role.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: password: Password must be at least 8 characters long\"\n}\n```\n\n**3. Error: Email/Phone Already Exists (409 Conflict)**\n*Scenario: Trying to register with an email that is already in use.*\n\n```json\n{\n    \"status\": \"error\",\n    \"message\": \"Email is already registered\"\n}\n```\n\n-----\n\n#### 💻 cURL Example\n\n```bash\ncurl --location 'http://localhost:3000/api/v1/auth/register' \\\n--header 'Content-Type: application/json' \\\n--data '{\n    \"email\": \"landlord@rentverse.com\",\n    \"password\": \"mySecretPassword\",\n    \"name\": \"Mr. Landlord\",\n    \"role\": \"LANDLORD\",\n    \"phone\": \"08987654321\"\n}'\n```\n\n-----\n\n### 📱 Client Implementation Note (Mobile Team)\n\n1.  **Flow:**\n      * User fills out the Sign Up form.\n      * App calls `POST /auth/register`.\n      * **If Success:** Automatically navigate the user to the **Login Screen** (or auto-fill the login form).\n      * **Auto-Login:** If you want a seamless experience, you can immediately call `POST /auth/login` in the background using the same credentials after a successful register response.\n2.  **Validation:**\n      * Ensure the `role` dropdown only allows \"TENANT\" or \"LANDLORD\".\n      * Pre-validate the email format and password length on the client side for better UX."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "72eac812-4362-4c1e-bb56-55195f14cb60",
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.status === 'success') {",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "9e4ca795-cce1-4c99-80d5-20fcf01563b3",
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "abd4d951-df15-47b6-80e0-6f494db8b351",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tenant@rentverse.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "### 📄 Endpoint: User Login\n\n**Description:**\nThis endpoint authenticates a registered user (Tenant or Landlord). Upon success, it returns a **User Profile**, a short-lived **Access Token** (JWT, 15m), and a long-lived **Refresh Token** (Opaque, 30d).\n\n  * **Method:** `POST`\n  * **URL:** `{{base_url}}/auth/login`\n  * **Authentication:** None (Public Endpoint)\n\n-----\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| :--- | :--- | :--- |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n```json\n{\n  \"email\": \"landlord@rentverse.com\",\n  \"password\": \"securepassword123\"\n}\n```\n\n| Key | Type | Requirement | Description |\n| :--- | :--- | :--- | :--- |\n| `email` | String | **Mandatory** | The registered email address. Must be a valid format. |\n| `password` | String | **Mandatory** | The user's password. |\n\n-----\n\n#### ✅ Response Examples\n\n**1. Success (200 OK)**\n*Login successful. Store the `refreshToken` securely (Keychain/Keystore) and `accessToken` in memory.*\n\n```json\n{\n    \"status\": \"success\",\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"user\": {\n            \"id\": \"user-uuid-12345\",\n            \"name\": \"John Doe\",\n            \"email\": \"landlord@rentverse.com\",\n            \"role\": \"LANDLORD\"\n        },\n        \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"refreshToken\": \"7f8a9b1c2d3e4f5g6h7i8j9k0l...\"\n    }\n}\n```\n\n**2. Error: Validation Failure (400 Bad Request)**\n*Scenario: Missing email or invalid format.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: email: Invalid email address format\"\n}\n```\n\n**3. Error: Invalid Credentials (401 Unauthorized)**\n*Scenario: Wrong password or email not found.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Invalid email or password\"\n}\n```\n\n-----\n\n#### 💻 cURL Example\n\n```bash\ncurl --location 'http://localhost:3000/api/v1/auth/login' \\\n--header 'Content-Type: application/json' \\\n--data '{\n    \"email\": \"tenant@example.com\",\n    \"password\": \"mysecretpassword\"\n}'\n```\n\n-----\n\n### 📱 Client Implementation Note (Mobile Team)\n\n1.  **After Login:**\n      * Store `data.refreshToken` in **Secure Storage** (Encrypted).\n      * Store `data.accessToken` in **Memory** (State Management like Provider/Riverpod/Redux).\n      * Store `data.user` for profile display.\n2.  **Immediate Action:**\n      * Call `POST /notifications/device` immediately after login to link the device for Push Notifications."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9a6c2b0d-adc6-4c8b-ae4a-cae05a722b2f",
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.status === 'success') {",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "1f7aacb6-9a2b-48f8-81a1-0bdc8f4444cb",
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "id": "de74c130-ce6e-4d51-a647-ee7e535924ed",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "### 📄 Endpoint: Refresh Token\n\n**Description:**  \nThis endpoint allows a client to exchange a valid (but potentially expiring) `refreshToken` for a completely new pair of tokens (`accessToken` + `refreshToken`).  \n**Note:** This system uses **Refresh Token Rotation**. The old refresh token is **invalidated immediately** after use. You must replace the old token in your secure storage with the new one returned by this API.\n\n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/auth/refresh`\n    \n- **Authentication:** None (Public Endpoint)\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n``` json\n{\n  \"refreshToken\": \"7f8a9b1c2d3e4f5g6h7i8j9k0l...\"\n}\n\n ```\n\n| Key | Type | Requirement | Description |\n| --- | --- | --- | --- |\n| `refreshToken` | String | **Mandatory** | The opaque, long-lived token received during Login or the last Refresh. |\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK)**  \n_Returns a fresh Access Token (15m) and a new Refresh Token (30d). Update your storage immediately._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Token refreshed successfully\",\n    \"data\": {\n        \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"refreshToken\": \"a1b2c3d4e5f6g7h8i9j0k1l2m...\"\n    }\n}\n\n ```\n\n**2\\. Error: Missing Token (400 Bad Request)**  \n_Scenario: Request body is empty or missing the field._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: refreshToken: Refresh token is required\"\n}\n\n ```\n\n**3\\. Error: Invalid/Expired/Reused Token (401 Unauthorized)**  \n_Scenario: Token does not exist in Redis, has expired, or has already been used (Reuse Detection)._\n\n``` json\n{\n    \"status\": \"error\",\n    \"message\": \"Invalid or expired refresh token\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/auth/refresh' \\\n--header 'Content-Type: application/json' \\\n--data '{\n    \"refreshToken\": \"YOUR_REFRESH_TOKEN_HERE\"\n}'\n\n ```\n\n---\n\n### 📱 Client Implementation Note (Mobile Team)\n\n1. **Rotation Logic:**\n    - When you call this endpoint, you **MUST** overwrite the old `refreshToken` in your Keychain/Keystore with the new one from the response.\n        \n    - The old one is dead. If you try to use it again, you will get `401`.\n        \n2. **Concurrency:**\n    - If your app makes 5 parallel API calls and they all fail with `401 (Access Token Expired)`, ensure you use a **Mutex/Lock** mechanism to call `/refresh` **only once**.\n        \n    - If you call `/refresh` 5 times in parallel, the first one will succeed, but it will invalidate the token, causing the other 4 to fail (Race Condition)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "id": "e38b6b5b-2c18-4c1a-8c8b-4acf17173d75",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Smith\",\n  \"phone\": \"081299998888\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "### 📄 Endpoint: Update Profile\n\n**Description:**\nThis endpoint allows a logged-in user (Tenant or Landlord) to update their personal information. All fields are optional, but if provided, they must meet the validation criteria.\n\n  * **Method:** `PUT`\n  * **URL:** `{{base_url}}/auth/profile`\n  * **Authentication:** `Bearer <access_token>`\n\n-----\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| :--- | :--- | :--- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** The JWT access token obtained from login. |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n```json\n{\n  \"name\": \"Jane Smith\",\n  \"phone\": \"081299998888\"\n}\n```\n\n| Key | Type | Requirement | Description |\n| :--- | :--- | :--- | :--- |\n| `name` | String | **Optional** | The new display name (Min 3 characters). |\n| `phone` | String | **Optional** | The new phone number (Min 10 digits). Must be unique in the system. |\n\n-----\n\n#### ✅ Response Examples\n\n**1. Success (200 OK)**\n*Profile updated successfully. Returns the updated user object.*\n\n```json\n{\n    \"status\": \"success\",\n    \"message\": \"Profile updated successfully\",\n    \"data\": {\n        \"id\": \"user-uuid-12345\",\n        \"email\": \"jane@example.com\",\n        \"name\": \"Jane Smith\",\n        \"phone\": \"081299998888\",\n        \"role\": \"TENANT\",\n        \"isVerified\": true,\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\",\n        \"updatedAt\": \"2025-12-07T10:30:00.000Z\"\n    }\n}\n```\n\n**2. Error: Validation Failure (400 Bad Request)**\n*Scenario: Name is too short.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: name: Name must be at least 3 characters\"\n}\n```\n\n**3. Error: Phone Number Conflict (409 Conflict)**\n*Scenario: The provided phone number is already used by another user.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Phone number already in use\"\n}\n```\n\n**4. Error: Unauthorized (401 Unauthorized)**\n*Scenario: Token is missing or expired.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"You are not logged in. Please log in to get access.\"\n}\n```\n\n-----\n\n#### 💻 cURL Example\n\n```bash\ncurl --location --request PUT 'http://localhost:3000/api/v1/auth/profile' \\\n--header 'Content-Type: application/json' \\\n--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n--data '{\n    \"name\": \"New Name\",\n    \"phone\": \"08123456789\"\n}'\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "id": "d3b9f4b3-8989-4ac2-8c71-6813040ad7a8",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "# Rentverse API Reference: Auth Module\n\n**Version:** 1.0  \n**Base URL:** `http://localhost:3000/api/v1`\n\n## Get Current User Profile\n\nRetrieves the detailed profile of the currently authenticated user. This includes their basic account information, assigned roles, and associated trust profiles (Tenant or Landlord).\n\n- **Endpoint:** `/auth/me`\n    \n- **Method:** `GET`\n    \n- **Access:** Protected (Requires valid JWT Access Token)\n    \n\n### Request Headers\n\n| Header | Value | Required | Description |\n| --- | --- | --- | --- |\n| `Authorization` | `Bearer` | **Yes** | The access token received from the Login endpoint. |\n\n### Request Body\n\nNone.\n\n### Example Request\n\n``` http\nGET /api/v1/auth/me HTTP/1.1\nHost: localhost:3000\nAuthorization: Bearer eyJhbGciOiJIUzI1Ni...\n\n ```\n\n### Success Response (200 OK)\n\nReturns the full user object, including relational data for roles and trust profiles.\n\n``` json\n{\n  \"status\": \"success\",\n  \"message\": \"User profile retrieved successfully\",\n  \"data\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"email\": \"landlord@rentverse.com\",\n    \"name\": \"Budi Santoso\",\n    \"phone\": \"081234567890\",\n    \"avatarUrl\": null,\n    \"isVerified\": false,\n    \"createdAt\": \"2025-12-04T10:00:00.000Z\",\n    \"updatedAt\": \"2025-12-04T10:00:00.000Z\",\n    \"roles\": [\n      {\n        \"roleId\": \"role-uuid-admin\",\n        \"userId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"role\": {\n          \"id\": \"role-uuid-admin\",\n          \"name\": \"LANDLORD\",\n          \"description\": null\n        }\n      }\n    ],\n    \"landlordProfile\": {\n      \"id\": \"profile-uuid-1\",\n      \"userRefId\": \"123e4567-e89b-12d3-a456-426614174000\",\n      \"lrs_score\": 50,\n      \"response_rate\": 0,\n      \"kyc_status\": \"PENDING\",\n      \"ktpUrl\": null,\n      \"ktpVerifiedAt\": null\n    },\n    \"tenantProfile\": null\n  }\n}\n\n ```\n\n### Error Responses\n\n**401 Unauthorized**  \nThe request failed because the user is not authenticated (missing or invalid token).\n\n``` json\n{\n  \"status\": \"fail\",\n  \"message\": \"You are not logged in. Please log in to get access.\"\n}\n\n ```\n\n**404 Not Found**  \nThe user account associated with the token no longer exists in the database.\n\n``` json\n{\n  \"status\": \"fail\",\n  \"message\": \"User not found\"\n}\n\n ```\n\n**500 Internal Server Error**  \nAn unexpected server error occurred.\n\n``` json\n{\n  \"status\": \"error\",\n  \"message\": \"Internal Server Error\"\n}\n\n ```"
+          },
+          "response": []
+        }
+      ],
+      "id": "f5c82d63-bd08-4e54-909c-7d3e1166b6b6"
+    },
+    {
+      "name": "Rental",
+      "item": [
+        {
+          "name": "Get All Rental References",
+          "id": "ade6863f-8201-4c24-8a4c-6fc5d7df7912",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rental/references",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rental",
+                "references"
+              ]
+            },
+            "description": "# Rentverse API Reference: Rental Module\n\n**Version:** 1.0  \n**Base URL:** `http://localhost:3000/api/v1`\n\n## Get Rental References\n\nFetches the complete set of master data required to populate \"Create Listing\" forms and search filters. This includes static lists for property types, listing types, billing periods, and dynamic EAV (Entity-Attribute-Value) attribute definitions.\n\n- **Endpoint:** `/rental/references`\n    \n- **Method:** `GET`\n    \n- **Access:** Public (No Authentication Required)\n    \n\n### Request Headers\n\nNone.\n\n### Request Body\n\nNone.\n\n### Example Request\n\n``` http\nGET /api/v1/rental/references HTTP/1.1\nHost: localhost:3000\n\n ```\n\n### Success Response (200 OK)\n\nReturns categorized lists of reference data.\n\n``` json\n{\n  \"status\": \"success\",\n  \"message\": \"Reference data retrieved successfully\",\n  \"data\": {\n    \"propertyTypes\": [\n      {\n        \"id\": 1,\n        \"slug\": \"apartment\",\n        \"label\": \"Apartment\"\n      },\n      {\n        \"id\": 2,\n        \"slug\": \"house\",\n        \"label\": \"House\"\n      },\n      {\n        \"id\": 6,\n        \"slug\": \"room\",\n        \"label\": \"Room (Kost)\"\n      }\n    ],\n    \"listingTypes\": [\n      {\n        \"id\": 1,\n        \"slug\": \"rent\",\n        \"label\": \"For Rent\"\n      },\n      {\n        \"id\": 2,\n        \"slug\": \"sale\",\n        \"label\": \"For Sale\"\n      }\n    ],\n    \"billingPeriods\": [\n      {\n        \"id\": 1,\n        \"slug\": \"monthly\",\n        \"label\": \"Monthly\",\n        \"durationMonths\": 1\n      },\n      {\n        \"id\": 4,\n        \"slug\": \"yearly\",\n        \"label\": \"Yearly\",\n        \"durationMonths\": 12\n      }\n    ],\n    \"attributes\": [\n      {\n        \"id\": 1,\n        \"slug\": \"bedroom\",\n        \"label\": \"Bedroom\",\n        \"dataType\": \"NUMBER\",\n        \"iconUrl\": \"bed\"\n      },\n      {\n        \"id\": 5,\n        \"slug\": \"furnishing\",\n        \"label\": \"Furnishing\",\n        \"dataType\": \"STRING\",\n        \"iconUrl\": \"sofa\"\n      },\n      {\n        \"id\": 7,\n        \"slug\": \"electricity\",\n        \"label\": \"Electricity (VA)\",\n        \"dataType\": \"NUMBER\",\n        \"iconUrl\": \"zap\"\n      }\n    ]\n  }\n}\n\n ```\n\n_Note: The actual IDs and values are determined by the database seeding process._\n\n### Error Responses\n\n**500 Internal Server Error**  \nAn unexpected server error occurred (e.g., Database connection failure).\n\n``` json\n{\n  \"status\": \"error\",\n  \"message\": \"Internal Server Error\"\n}\n\n ```"
+          },
+          "response": []
+        }
+      ],
+      "id": "152db92f-fd19-47af-9914-495babcf2132"
+    },
+    {
+      "name": "Property",
+      "item": [
+        {
+          "name": "Create Property",
+          "id": "c7ee7e2e-5efe-45f8-8c4d-5b862b1f4b2a",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "/home/dean/Documents/67f05536.jpg"
+                },
+                {
+                  "key": "title",
+                  "value": "Modern Apartment in CBD",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "A beautiful unit...",
+                  "type": "text"
+                },
+                {
+                  "key": "propertyTypeId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "listingTypeId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "15000000",
+                  "type": "text"
+                },
+                {
+                  "key": "currency",
+                  "value": "IDR",
+                  "type": "text"
+                },
+                {
+                  "key": "address",
+                  "value": "Jl. Jend. Sudirman No. 1",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "Jakarta",
+                  "type": "text"
+                },
+                {
+                  "key": "country",
+                  "value": "Indonesia",
+                  "type": "text"
+                },
+                {
+                  "key": "latitude",
+                  "value": "-8.409518",
+                  "type": "text"
+                },
+                {
+                  "key": "longitude",
+                  "value": "115.188919",
+                  "type": "text"
+                },
+                {
+                  "key": "billingPeriodIds",
+                  "value": "[1]",
+                  "type": "text"
+                },
+                {
+                  "key": "attributes",
+                  "value": "[{\"attributeTypeId\": 1, \"value\": \"2\"}, {\"attributeTypeId\": 5, \"value\": \"Full\"}]",
+                  "type": "text"
+                },
+                {
+                  "key": "amenities",
+                  "value": "[\"WIFI\", \"POOL\", \"AC\"]",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "properties"
+              ]
+            },
+            "description": "### 📄 Endpoint: Create Property Listing\n\n**Description:**\nThis endpoint allows a **Verified Landlord** to create a new property listing with images. Since this request involves file uploads, it uses `multipart/form-data`. Complex fields like arrays or objects must be sent as **JSON strings**.\n\n  * **Method:** `POST`\n  * **URL:** `{{base_url}}/properties`\n  * **Authentication:** `Bearer <access_token>` (Role: `LANDLORD` only)\n\n-----\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| :--- | :--- | :--- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** Token must belong to a user with role `LANDLORD`. |\n| `Content-Type` | `multipart/form-data` | **Required.** Automatically set by Postman/Client. |\n\n**Body (form-data):**\n\n| Key | Type | Requirement | Description | Example Value |\n| :--- | :--- | :--- | :--- | :--- |\n| `images` | File | **Mandatory** | Upload 1 to 5 images (Max 5MB each). | `[Select Files]` |\n| `title` | Text | **Mandatory** | Property title (min 5 chars). | `Modern Minimalist House in BSD` |\n| `description` | Text | Optional | Detailed description. | `A lovely 2-story house...` |\n| `propertyTypeId` | Text | **Mandatory** | ID from `/rental/references`. | `2` (e.g., House) |\n| `listingTypeId` | Text | **Mandatory** | ID from `/rental/references`. | `1` (e.g., Rent) |\n| `price` | Text | **Mandatory** | Base price per smallest billing unit. | `5000000` |\n| `currency` | Text | Optional | Default is `IDR`. | `IDR` |\n| `address` | Text | **Mandatory** | Full street address. | `Jl. BSD Raya Utama No. 88` |\n| `city` | Text | **Mandatory** | City name. | `Tangerang Selatan` |\n| `country` | Text | Optional | Default is `Indonesia`. | `Indonesia` |\n| `latitude` | Text | Optional | Geo-coordinate. | `-6.300641` |\n| `longitude` | Text | Optional | Geo-coordinate. | `106.645569` |\n| `billingPeriodIds`| Text | **Mandatory** | **JSON Array String.** IDs of allowed billing cycles. | `[1, 4]` (Monthly & Yearly) |\n| `amenities` | Text | Optional | **JSON Array String.** List of amenity tags. | `[\"WIFI\", \"AC\", \"PARKING\"]` |\n| `attributes` | Text | Optional | **JSON Array String.** Dynamic specs (EAV). | `[{\"attributeTypeId\": 1, \"value\": \"3\"}, {\"attributeTypeId\": 2, \"value\": \"2\"}]` |\n\n> **Note on JSON Strings:** For `billingPeriodIds`, `amenities`, and `attributes`, you cannot send a raw array in `form-data`. You must `JSON.stringify()` the array before sending it as a text field.\n\n-----\n\n#### ✅ Response Examples\n\n**1. Success (201 Created)**\n\n```json\n{\n    \"status\": \"success\",\n    \"message\": \"Property listed successfully\",\n    \"data\": {\n        \"id\": \"prop-uuid-12345\",\n        \"landlordId\": \"user-uuid-9876\",\n        \"title\": \"Modern Minimalist House in BSD\",\n        \"price\": \"5000000\",\n        \"city\": \"Tangerang Selatan\",\n        \"isVerified\": false,\n        \"images\": [\n            {\n                \"url\": \"http://172.17.0.1:9000/rentverse-public/properties/img1.jpg\",\n                \"isPrimary\": true\n            },\n            {\n                \"url\": \"http://172.17.0.1:9000/rentverse-public/properties/img2.jpg\",\n                \"isPrimary\": false\n            }\n        ],\n        \"attributes\": [\n            {\n                \"value\": \"3\",\n                \"attributeType\": {\n                    \"slug\": \"bedroom\",\n                    \"label\": \"Bedroom\"\n                }\n            }\n        ]\n    }\n}\n```\n\n**2. Error: Validation Failure (400 Bad Request)**\n*Scenario: Missing title or invalid JSON format.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: title: Title must be at least 5 characters long\"\n}\n```\n\n**3. Error: Unauthorized Role (403 Forbidden)**\n*Scenario: A Tenant tries to create a listing.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"You do not have permission to perform this action\"\n}\n```\n\n-----\n\n#### 💻 cURL Example\n\n```bash\ncurl --location 'http://localhost:3000/api/v1/properties' \\\n--header 'Authorization: Bearer <YOUR_LANDLORD_TOKEN>' \\\n--form 'images=@\"/path/to/image1.jpg\"' \\\n--form 'images=@\"/path/to/image2.jpg\"' \\\n--form 'title=\"Luxury Apartment in CBD\"' \\\n--form 'propertyTypeId=\"1\"' \\\n--form 'listingTypeId=\"1\"' \\\n--form 'price=\"15000000\"' \\\n--form 'address=\"Jalan Sudirman Kav 1\"' \\\n--form 'city=\"Jakarta Pusat\"' \\\n--form 'billingPeriodIds=\"[1, 2]\"' \\\n--form 'amenities=\"[\\\"GYM\\\", \\\"POOL\\\"]\"' \\\n--form 'attributes=\"[{\\\"attributeTypeId\\\": 1, \\\"value\\\": \\\"2\\\"}]\"'\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get List Properties",
+          "id": "9b870c38-3949-4ad7-a7e4-36706ed6d73a",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Jakarta",
+                  "disabled": true
+                },
+                {
+                  "key": "minPrice",
+                  "value": "5000000",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "price_asc",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### 📄 Endpoint: Get Property Feed (Infinite Scroll)\n\n**Description:**  \nThis public endpoint retrieves a list of available properties. It is optimized for mobile \"Infinite Scroll\" using cursor-based pagination. It supports filtering by location, price, and type, as well as sorting.\n\n- **Method:** `GET`\n    \n- **URL:** `{{base_url}}/properties`\n    \n- **Authentication:** None (Public Endpoint)\n    \n\n---\n\n#### 🔍 Query Parameters\n\n| Key | Type | Description | Example |\n| --- | --- | --- | --- |\n| `search` | String | Filter by property title (case-insensitive). | `Modern Apartment` |\n| `city` | String | Filter by city name. | `Jakarta` |\n| `typeId` | Number | Filter by Property Type ID (e.g., 1=Apartment). Get IDs from `/rental/references`. | `1` |\n| `minPrice` | Number | Filter properties with price >= this value. | `5000000` |\n| `maxPrice` | Number | Filter properties with price <= this value. | `20000000` |\n| `sortBy` | Enum | Sort order. Values: `price_asc`, `price_desc`, `oldest`, `newest`. | `price_asc` |\n| `limit` | Number | Number of items to return per request (Default: 10). | `10` |\n| `cursor` | String | The `id` of the last item from the previous response. Used for fetching the \"next page\". | `uuid-string...` |\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK) - First Page**  \n_Returns the initial list of properties with metadata for pagination._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Properties retrieved successfully\",\n    \"meta\": {\n        \"total\": 45,\n        \"limit\": 10,\n        \"nextCursor\": \"a1b2c3d4-e5f6-47g8-h9i0-j1k2l3m4n5o6\",\n        \"hasMore\": true\n    },\n    \"data\": [\n        {\n            \"id\": \"b2c3d4e5-f6g7-48h9-i0j1-k2l3m4n5o6p7\",\n            \"landlordId\": \"user-uuid-123\",\n            \"title\": \"Luxury Loft in CBD\",\n            \"description\": \"A beautiful open space loft...\",\n            \"amenities\": [\"WIFI\", \"POOL\", \"GYM\"],\n            \"address\": \"Jalan Sudirman No. 1\",\n            \"city\": \"Jakarta\",\n            \"country\": \"Indonesia\",\n            \"price\": \"15000000\",\n            \"currency\": \"IDR\",\n            \"isVerified\": true,\n            \"images\": [\n                {\n                    \"id\": \"img-uuid-1\",\n                    \"url\": \"http://172.17.0.1:9000/rentverse-public/properties/uuid.jpg\",\n                    \"isPrimary\": true\n                }\n            ],\n            \"propertyType\": {\n                \"id\": 1,\n                \"slug\": \"apartment\",\n                \"label\": \"Apartment\"\n            }\n        },\n        // ... 9 more items\n    ]\n}\n\n ```\n\n**2\\. Success (200 OK) - Next Page (Using Cursor)**  \n_Request URL:_ `{{base_url}}/properties?cursor=a1b2c3d4-e5f6-47g8-h9i0-j1k2l3m4n5o6`\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Properties retrieved successfully\",\n    \"meta\": {\n        \"total\": 45,\n        \"limit\": 10,\n        \"nextCursor\": \"x9y8z7w6-v5u4-3t2s-1r0q-p9o8n7m6l5k4\",\n        \"hasMore\": true\n    },\n    \"data\": [\n        // ... next 10 items\n    ]\n}\n\n ```\n\n**3\\. Success (200 OK) - End of List**  \n_When_ `_hasMore_` _is false, stop making requests._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Properties retrieved successfully\",\n    \"meta\": {\n        \"total\": 45,\n        \"limit\": 10,\n        \"nextCursor\": null,\n        \"hasMore\": false\n    },\n    \"data\": [\n        // ... remaining items (less than limit)\n    ]\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n**Basic Search:**\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/properties?city=Jakarta&minPrice=5000000'\n\n ```\n\n**Fetching Next Page:**\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/properties?cursor=LAST_SEEN_PROPERTY_ID'\n\n ```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Property Details",
+          "id": "2cc01929-0fe7-4a71-a498-c61afa6abde2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/properties/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "properties",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1205e218-52db-4ecc-b2d1-96a4e9bb2260"
+                }
+              ]
+            },
+            "description": "### 📄 Endpoint: Get Property Detail\n\n**Description:**\nThis public endpoint retrieves the full details of a specific property listing, including its specifications, amenities, images, and allowed billing periods.\n\n  * **Method:** `GET`\n  * **URL:** `{{base_url}}/properties/:id`\n  * **Authentication:** None (Public Endpoint)\n\n-----\n\n#### 📨 Request\n\n**Path Variables:**\n\n| Key | Type | Description | Example |\n| :--- | :--- | :--- | :--- |\n| `id` | String (UUID) | **Mandatory** | The unique identifier of the property. | `550e8400-e29b-41d4-a716-446655440000` |\n\n-----\n\n#### ✅ Response Examples\n\n**1. Success (200 OK)**\n*Returns the complete property object.*\n\n```json\n{\n    \"status\": \"success\",\n    \"message\": \"Property details retrieved successfully\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"landlordId\": \"user-uuid-9876\",\n        \"title\": \"Modern Minimalist House in BSD\",\n        \"description\": \"A lovely 2-story house with a garden...\",\n        \"amenities\": [\n            \"WIFI\",\n            \"AC\",\n            \"PARKING\"\n        ],\n        \"address\": \"Jl. BSD Raya Utama No. 88\",\n        \"city\": \"Tangerang Selatan\",\n        \"country\": \"Indonesia\",\n        \"latitude\": -6.300641,\n        \"longitude\": 106.645569,\n        \"price\": \"5000000\",\n        \"currency\": \"IDR\",\n        \"isVerified\": false,\n        \"createdAt\": \"2025-12-07T02:00:00.000Z\",\n        \"updatedAt\": \"2025-12-07T02:00:00.000Z\",\n        \"propertyType\": {\n            \"id\": 2,\n            \"slug\": \"house\",\n            \"label\": \"House\"\n        },\n        \"listingType\": {\n            \"id\": 1,\n            \"slug\": \"rent\",\n            \"label\": \"For Rent\"\n        },\n        \"images\": [\n            {\n                \"id\": \"img-uuid-1\",\n                \"url\": \"http://172.17.0.1:9000/rentverse-public/properties/img1.jpg\",\n                \"isPrimary\": true\n            },\n            {\n                \"id\": \"img-uuid-2\",\n                \"url\": \"http://172.17.0.1:9000/rentverse-public/properties/img2.jpg\",\n                \"isPrimary\": false\n            }\n        ],\n        \"allowedBillingPeriods\": [\n            {\n                \"propertyId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"billingPeriodId\": 1,\n                \"billingPeriod\": {\n                    \"id\": 1,\n                    \"slug\": \"monthly\",\n                    \"label\": \"Monthly\",\n                    \"durationMonths\": 1\n                }\n            },\n            {\n                \"propertyId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"billingPeriodId\": 4,\n                \"billingPeriod\": {\n                    \"id\": 4,\n                    \"slug\": \"yearly\",\n                    \"label\": \"Yearly\",\n                    \"durationMonths\": 12\n                }\n            }\n        ],\n        \"attributes\": [\n            {\n                \"id\": \"attr-uuid-1\",\n                \"value\": \"3\",\n                \"attributeType\": {\n                    \"id\": 1,\n                    \"slug\": \"bedroom\",\n                    \"label\": \"Bedroom\",\n                    \"dataType\": \"NUMBER\",\n                    \"iconUrl\": \"bed\"\n                }\n            },\n            {\n                \"id\": \"attr-uuid-2\",\n                \"value\": \"2\",\n                \"attributeType\": {\n                    \"id\": 2,\n                    \"slug\": \"bathroom\",\n                    \"label\": \"Bathroom\",\n                    \"dataType\": \"NUMBER\",\n                    \"iconUrl\": \"bath\"\n                }\n            }\n        ]\n    }\n}\n```\n\n**2. Error: Not Found (404 Not Found)**\n*Scenario: The ID provided does not exist.*\n\n```json\n{\n    \"status\": \"fail\",\n    \"message\": \"Property not found\"\n}\n```\n\n**3. Error: Invalid ID Format (500 Internal Server Error / 400)**\n*Scenario: The ID provided is not a valid UUID string.*\n\n```json\n{\n    \"status\": \"error\",\n    \"message\": \"Internal Server Error\" \n}\n```\n\n*(Note: To get a cleaner 400 error for invalid UUIDs, we can add Zod validation to `req.params` in the future).*\n\n-----\n\n#### 💻 cURL Example\n\n```bash\ncurl --location 'http://localhost:3000/api/v1/properties/550e8400-e29b-41d4-a716-446655440000'\n```"
+          },
+          "response": []
+        }
+      ],
+      "id": "e8c97e3a-ad6e-4fd7-ab97-1e0f6f273f4f",
+      "description": "### 📦 Global Configuration\n\n  * **Base URL:** `{{base_url}}` = `http://localhost:3000/api/v1`\n  * **Authorization:**\n      * **Landlord Endpoints:** Bearer Token (User with `LANDLORD` role)\n      * **Public Endpoints:** None\n\n-----\n\n### 1\\. 📋 Get Property References (Prerequisite)\n\nFetch this data first to populate your \"Create Listing\" form dropdowns (e.g., Property Types, Attributes).\n\n  * **Method:** `GET`\n  * **URL:** `{{base_url}}/rental/references`\n  * **Auth:** None (Public)\n  * **Response:**\n    ```json\n    {\n        \"status\": \"success\",\n        \"data\": {\n            \"propertyTypes\": [ { \"id\": 1, \"label\": \"Apartment\" }, ... ],\n            \"listingTypes\": [ { \"id\": 1, \"label\": \"For Rent\" }, ... ],\n            \"billingPeriods\": [ { \"id\": 1, \"label\": \"Monthly\" }, ... ],\n            \"attributes\": [\n                { \"id\": 1, \"label\": \"Bedroom\", \"dataType\": \"NUMBER\" },\n                { \"id\": 5, \"label\": \"Furnishing\", \"dataType\": \"STRING\" }\n            ]\n        }\n    }\n    ```\n\n-----\n\n### 2\\. 🏠 Create Property Listing\n\nPublish a new property. Requires `multipart/form-data` to handle image uploads and complex data structures.\n\n  * **Method:** `POST`\n  * **URL:** `{{base_url}}/properties`\n  * **Auth:** Bearer Token (Landlord)\n  * **Body Type:** `form-data`\n\n#### **Form Fields Configuration**\n\n| Key | Type | Value Example | Notes |\n| :--- | :--- | :--- | :--- |\n| `images` | File | *(Select 1-5 files)* | **Required**. JPG/PNG. |\n| `title` | Text | `Luxury Villa in Bali` | **Required**. Min 5 chars. |\n| `description` | Text | `Beautiful scenery...` | Optional. |\n| `price` | Text | `25000000` | **Required**. Numeric. |\n| `currency` | Text | `IDR` | Defaults to IDR. |\n| `address` | Text | `Jl. Sunset Road` | **Required**. |\n| `city` | Text | `Kuta` | **Required**. |\n| `country` | Text | `Indonesia` | Defaults to Indonesia. |\n| `latitude` | Text | `-8.409518` | Optional. Float. |\n| `longitude` | Text | `115.188919` | Optional. Float. |\n| `propertyTypeId` | Text | `2` | **Required**. ID from References. |\n| `listingTypeId` | Text | `1` | **Required**. ID from References. |\n| `amenities` | Text | `[\"WIFI\", \"POOL\", \"AC\"]` | **JSON String**. Array of strings. |\n| `billingPeriodIds`| Text | `[1, 4]` | **JSON String**. Array of IDs (e.g. Monthly, Yearly). |\n| `attributes` | Text | `[{\"attributeTypeId\": 1, \"value\": \"3\"}]` | **JSON String**. Array of objects mapping ID to Value. |\n\n#### **Example `attributes` JSON String**\n\nUse this structure to define specs (e.g., 3 Bedrooms, Fully Furnished):\n\n```json\n[\n  { \"attributeTypeId\": 1, \"value\": \"3\" }, \n  { \"attributeTypeId\": 5, \"value\": \"Fully Furnished\" }\n]\n```\n\n#### **Success Response (201 Created)**\n\n```json\n{\n    \"status\": \"success\",\n    \"message\": \"Property listed successfully\",\n    \"data\": {\n        \"id\": \"prop-uuid-123\",\n        \"title\": \"Luxury Villa in Bali\",\n        \"price\": \"25000000\",\n        \"amenities\": [\"WIFI\", \"POOL\", \"AC\"],\n        \"images\": [\n            {\n                \"url\": \"http://localhost:9000/rentverse-public/properties/user-id/img1.jpg\",\n                \"isPrimary\": true\n            }\n        ],\n        \"attributes\": [\n            {\n                \"value\": \"3\",\n                \"attributeType\": { \"label\": \"Bedroom\" }\n            }\n        ]\n    }\n}\n```\n\n#### **Common Errors**\n\n  * **400 Bad Request:** Validation failed (e.g., malformed JSON string, missing fields).\n  * **403 Forbidden:** User is not a Landlord.\n  * **401 Unauthorized:** Invalid or missing token."
+    },
+    {
+      "name": "KYC",
+      "item": [
+        {
+          "name": "Submit KYC Documents",
+          "id": "bb850bb6-aa95-488e-83c3-2afd75b71944",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "ktp",
+                  "type": "file",
+                  "src": "/home/dean/Documents/67f05536.jpg"
+                },
+                {
+                  "key": "selfie",
+                  "type": "file",
+                  "src": "/home/dean/Documents/3931d3ad.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/kyc/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "kyc",
+                "submit"
+              ]
+            },
+            "description": "### 📄 Endpoint: Submit KYC Documents\n\n**Description:**  \nThis endpoint handles the secure upload of identity verification documents (Identity Card/KTP and Selfie). Files are stored in a **Private S3 Bucket** (not publicly accessible) and the user's Trust Profile status is updated to `SUBMITTED`.\n\n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/kyc/submit`\n    \n- **Authentication:** `Bearer`\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** The JWT access token obtained from login. |\n| `Content-Type` | `multipart/form-data` | **Required.** Automatically set by Postman/Client when attaching files. |\n\n**Body (form-data):**\n\n| Key | Type | Requirement | Description | Restrictions |\n| --- | --- | --- | --- | --- |\n| `ktp` | File | **Mandatory** | The user's Identity Card (KTP) image. | Max 5MB. Formats: JPG, PNG. |\n| `selfie` | File | **Conditional** | The user's Selfie holding the ID. **Required for TENANT role.** | Max 5MB. Formats: JPG, PNG. |\n\n> **Note:** Landlords are currently only required to upload the `ktp`. Tenants must upload both `ktp` and `selfie` for facial matching verification. \n  \n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK)**  \n_Documents uploaded successfully and KYC status updated._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Verification documents uploaded\",\n    \"data\": {\n        \"message\": \"KYC submitted successfully. Pending verification.\"\n    }\n}\n\n ```\n\n**2\\. Error: Validation Failure (400 Bad Request)**  \n_Scenario: A Tenant tries to submit without a selfie._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: Selfie is required for Tenants\"\n}\n\n ```\n\n**3\\. Error: No File Attached (400 Bad Request)**  \n_Scenario: Request sent without the 'ktp' field._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"KTP image is required\"\n}\n\n ```\n\n**4\\. Error: Unauthorized (401 Unauthorized)**  \n_Scenario: Token is missing, invalid, or expired._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"You are not logged in. Please log in to get access.\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/kyc/submit' \\\n--header &#x27;Authorization: Bearer <YOUR_ACCESS_TOKEN>&#x27; \\\n--form 'ktp=@\"/path/to/my_ktp.jpg\"' \\\n--form 'selfie=@\"/path/to/my_selfie.jpg\"'\n\n ```"
+          },
+          "response": []
+        }
+      ],
+      "id": "aaf753e4-5591-4833-a50d-7de590ba4431"
+    },
+    {
+      "name": "Notification",
+      "item": [
+        {
+          "name": "Register Device",
+          "id": "768cbb4b-472e-404b-8d00-5035210f51aa",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"eAzm5RRaQiC-2ej0Fj2_TC:APA91bHXhq9AsQUvN9zIncE9mHUv7r_0M9JG4fS3ovm3eWqCZBWVjudK999xUEtTudWMDrnfLkgSiAjjlf2xGj8lw9f5HundG7ZFVg5ZFmMqp5mvuhtxK98\",\n  \"platform\": \"ANDROID\",\n  \"deviceModel\": \"itel S688LN\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/device",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "device"
+              ]
+            },
+            "description": "### 📄 Endpoint: Register Device (Push Notifications)\n\n**Description:**  \nThis endpoint registers a user's device (FCM Token) to receive push notifications. This must be called every time the mobile app is opened or when the user logs in to ensure the token is fresh and associated with the current user.\n\n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/notifications/device`\n    \n- **Authentication:** `Bearer`\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** The JWT access token obtained from login. |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n``` json\n{\n  \"fcmToken\": \"c_5yq3...unique_fcm_token_from_firebase...\",\n  \"platform\": \"ANDROID\",\n  \"deviceModel\": \"Pixel 7 Pro\"\n}\n\n ```\n\n| Key | Type | Requirement | Description |\n| --- | --- | --- | --- |\n| `fcmToken` | String | **Mandatory** | The Firebase Cloud Messaging token generated by the mobile SDK. Min 10 chars. |\n| `platform` | Enum | **Mandatory** | The operating system. Values: `\"ANDROID\"`, `\"IOS\"`, `\"WEB\"`. |\n| `deviceModel` | String | **Optional** | The model name of the device (e.g., \"iPhone 14\"). Useful for debugging. |\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK)**  \n_Device registered or updated successfully._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Device registered successfully\",\n    \"data\": {\n        \"message\": \"Device registered successfully\"\n    }\n}\n\n ```\n\n**2\\. Error: Validation Failure (400 Bad Request)**  \n_Scenario: Invalid platform or missing token._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: platform: Platform must be ANDROID, IOS, or WEB\"\n}\n\n ```\n\n**3\\. Error: Unauthorized (401 Unauthorized)**  \n_Scenario: Token is missing or expired._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"You are not logged in. Please log in to get access.\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/notifications/device' \\\n--header 'Content-Type: application/json' \\\n--header &#x27;Authorization: Bearer <YOUR_ACCESS_TOKEN>&#x27; \\\n--data '{\n    \"fcmToken\": \"d7Xy9...\",\n    \"platform\": \"IOS\",\n    \"deviceModel\": \"iPhone 13\"\n}'\n\n ```"
+          },
+          "response": []
+        }
+      ],
+      "id": "16b2e326-ee00-4a82-beaa-a1f70ced7f49",
+      "description": "### 📱 Flutter Push Notification Guide (for Rentverse)\n\nSince the backend uses **Firebase Cloud Messaging (FCM)**, the Flutter app needs to use the `firebase_messaging` package.\n\n#### 1\\. Dependencies\n\nAdd these to `pubspec.yaml`:\n\n``` yaml\ndependencies:\n  firebase_core: latest_version\n  firebase_messaging: latest_version\n  flutter_local_notifications: latest_version # For showing heads-up alerts in foreground\n\n ```\n\n#### 2\\. The Logic Flow\n\n1. **App Starts:** Initialize Firebase.\n    \n2. **Login/Home:** Request Notification Permissions from the user.\n    \n3. **Get Token:** Retrieve the `fcmToken` from Firebase SDK.\n    \n4. **Sync with Backend (CRITICAL):** Call the Rentverse API `POST /notifications/device` to link this token to the logged-in user.\n    \n5. **Listen:** Handle incoming messages.\n    \n\n---\n\n### 3\\. Implementation Steps\n\n#### A. Initialize & Request Permission\n\n``` dart\nimport 'package:firebase_core/firebase_core.dart';\nimport 'package:firebase_messaging/firebase_messaging.dart';\nvoid main() async {\n  WidgetsFlutterBinding.ensureInitialized();\n  await Firebase.initializeApp();\n  // Register background handler\n  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);\n  runApp(MyApp());\n}\n// Must be a top-level function\nFuture<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {\n  print(\"Handling a background message: ${message.messageId}\");\n}\n\n ```\n\n#### B. Sync Token with Rentverse Backend\n\nThis is the most important part. When the user logs in, or when the token refreshes, you **MUST** send it to the backend.\n\n**API Endpoint:** `POST {{base_url}}/notifications/device`  \n**Headers:** `Authorization: Bearer`\n\n``` dart\nFuture<void> registerDeviceToken(String accessToken) async {\n  // 1. Get the token from Firebase\n  String? fcmToken = await FirebaseMessaging.instance.getToken();\n  if (fcmToken == null) return;\n  // 2. Send to Rentverse Backend\n  final response = await http.post(\n    Uri.parse('https://api.rentverse.com/api/v1/notifications/device'),\n    headers: {\n      'Content-Type': 'application/json',\n      'Authorization': 'Bearer $accessToken',\n    },\n    body: jsonEncode({\n      \"fcmToken\": fcmToken,\n      \"platform\": Platform.isAndroid ? \"ANDROID\" : \"IOS\",\n      \"deviceModel\": \"iPhone 14 Pro\" // Optional: Get real model if possible\n    }),\n  );\n  if (response.statusCode == 200) {\n    print(\"✅ Device registered for notifications\");\n  } else {\n    print(\"❌ Failed to register device: ${response.body}\");\n  }\n}\n\n ```\n\n#### C. Token Rotation\n\nThe FCM token can change (e.g., app reinstall, clearing data). You should listen for refresh events:\n\n``` dart\nFirebaseMessaging.instance.onTokenRefresh.listen((newToken) {\n  // Call the registerDeviceToken API again with the new token\n  registerDeviceToken(currentUser.accessToken);\n});\n\n ```\n\n---\n\n### 4\\. Handling Incoming Messages\n\nThe backend sends a standard payload structure:\n\n``` json\n{\n  \"notification\": {\n    \"title\": \"Welcome to Rentverse!\",\n    \"body\": \"Your account is ready.\"\n  },\n  \"data\": {\n    \"type\": \"BOOKING_UPDATE\",\n    \"bookingId\": \"12345\"\n  }\n}\n\n ```\n\n#### Scenario 1: App is in Foreground\n\nNotifications don't show up automatically when the app is open. You need to show a local notification manually or update the UI.\n\n``` dart\nFirebaseMessaging.onMessage.listen((RemoteMessage message) {\n  print('Got a message whilst in the foreground!');\n  print('Message data: ${message.data}');\n  if (message.notification != null) {\n    print('Message also contained a notification: ${message.notification}');\n    // Show a snackbar or LocalNotification dialog here\n    Get.snackbar(\n      message.notification!.title!,\n      message.notification!.body!,\n      onTap: (_) => handleInteraction(message.data),\n    );\n  }\n});\n\n ```\n\n#### Scenario 2: App is in Background / Terminated (User Taps Notification)\n\nThis opens the app. You need to check if the app was launched via a notification.\n\n``` dart\n// 1. Check if app was opened from a terminated state\nRemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();\nif (initialMessage != null) {\n  _handleMessage(initialMessage);\n}\n// 2. Listen for taps when app is in background\nFirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);\nvoid _handleMessage(RemoteMessage message) {\n  // Navigate based on data payload\n  if (message.data['type'] == 'booking') {\n    Navigator.pushNamed(context, '/booking', arguments: message.data['id']);\n  }\n}\n\n ```\n\n### Summary Checklist for Mobile Dev\n\n1. Setup Firebase Project (download `google-services.json` / `GoogleService-Info.plist`).\n    \n2. Call `FirebaseMessaging.instance.requestPermission()`.\n    \n3. **Crucial:** Call `POST /notifications/device` after every Login.\n    \n4. Listen to `onTokenRefresh` and re-register.\n    \n5. Handle navigation in `onMessageOpenedApp`."
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Create Booking",
+          "id": "baba9cf7-01fe-4837-bdad-d3bc141366e6",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"820e5614-9b33-46f8-8ee1-98cf656b89b5\",\n  \"billingPeriodId\": 1,\n  \"startDate\": \"2029-04-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "### 📄 Endpoint: Create Booking Request\n\n**Description:**  \nThis endpoint allows a **Verified Tenant** to initiate a rental booking. It performs availability checks, calculates the total price based on the billing period, and generates a `PENDING_PAYMENT` invoice.\n\n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/bookings`\n    \n- **Authentication:** `Bearer` (Role: `TENANT` only)\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** Must be a User with role `TENANT`. |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n``` json\n{\n  \"propertyId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"billingPeriodId\": 1,\n  \"startDate\": \"2025-12-01T00:00:00Z\"\n}\n\n ```\n\n| Key | Type | Requirement | Description |\n| --- | --- | --- | --- |\n| `propertyId` | String (UUID) | **Mandatory** | The ID of the property to rent. |\n| `billingPeriodId` | Integer | **Mandatory** | The ID of the billing cycle (e.g., 1 for Monthly, 4 for Yearly). Get this from `GET /rental/references`. |\n| `startDate` | String (ISO8601) | **Mandatory** | The check-in date. Must be a valid ISO date string. |\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (201 Created)**  \n_Booking created, Invoice generated, and Landlord notified._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Booking request created successfully. Please pay the invoice.\",\n    \"data\": {\n        \"bookingId\": \"a1b2c3d4-e5f6-47g8-h9i0-j1k2l3m4n5o6\",\n        \"invoiceId\": \"z9y8x7w6-v5u4-3t2s-1r0q-p9o8n7m6l5k4\",\n        \"status\": \"PENDING_PAYMENT\",\n        \"amount\": 15000000\n    }\n}\n\n ```\n\n**2\\. Error: Not Verified (403 Forbidden)**  \n_Scenario: Tenant has not completed KYC._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"You must complete KYC verification to book a property.\"\n}\n\n ```\n\n**3\\. Error: Property Unavailable (409 Conflict)**  \n_Scenario: Another booking exists for the selected dates._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Property is not available for the selected dates.\"\n}\n\n ```\n\n**4\\. Error: Invalid Billing Period (400 Bad Request)**  \n_Scenario: Trying to book \"Monthly\" on a property that only allows \"Yearly\"._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"This billing period is not allowed for this property\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/bookings' \\\n--header 'Content-Type: application/json' \\\n--header &#x27;Authorization: Bearer <YOUR_TENANT_TOKEN>&#x27; \\\n--data '{\n    \"propertyId\": \"YOUR_PROPERTY_ID\",\n    \"billingPeriodId\": 1,\n    \"startDate\": \"2025-11-01T10:00:00.000Z\"\n}'\n\n ```\n\n---\n\n### ⚠️ Pre-requisites for Testing\n\nTo successfully test this endpoint, ensure you have:\n\n1. **Registered a Tenant User:** (`POST /auth/register` with `role: \"TENANT\"`).\n    \n2. **Verified the Tenant:**\n    \n    - **Option A (Real way):** Use `POST /kyc/submit` then manually update DB `kyc_status` to `VERIFIED`.\n        \n    - **Option B (Cheat way):** Manually update your user's `TenantTrustProfile` in the database: `UPDATE \"tenant_profiles\" SET \"kyc_status\" = 'VERIFIED' WHERE \"userRefId\" = '...';`\n        \n3. **Created a Property:** As a Landlord (`POST /properties`).\n    \n4. **Found a Billing Period ID:** Check `GET /rental/references` (usually `1` is Monthly)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "id": "9d20e1c5-442b-4753-9aa2-1154a4bbf5b2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "### 📄 Endpoint: Get My Bookings\n\n**Description:**  \nThis endpoint retrieves a list of bookings associated with the current user. It is **Context-Aware**, meaning the response structure adapts based on the user's role:\n\n- **Tenants:** See the properties they have booked.\n    \n- **Landlords:** See who has booked their properties.\n    \n- **Method:** `GET`\n    \n- **URL:** `{{base_url}}/bookings`\n    \n- **Authentication:** `Bearer` (Role: `TENANT` or `LANDLORD`)\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** The token of the user. |\n\n**Query Parameters:**  \nNone.\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success - Tenant View (200 OK)**  \n_Scenario: A Tenant requesting their own bookings._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Bookings retrieved successfully\",\n    \"data\": [\n        {\n            \"id\": \"booking-uuid-123\",\n            \"status\": \"PENDING_PAYMENT\",\n            \"startDate\": \"2025-12-20T00:00:00.000Z\",\n            \"endDate\": \"2026-01-20T00:00:00.000Z\",\n            \"property\": {\n                \"id\": \"prop-uuid-555\",\n                \"title\": \"Cozy Studio in Jakarta\",\n                \"city\": \"Jakarta Selatan\",\n                \"image\": \"http://minio.rentverse.com/rentverse-public/properties/studio.jpg\"\n            },\n            \"payment\": {\n                \"invoiceId\": \"inv-uuid-999\",\n                \"status\": \"PENDING\",\n                \"amount\": 5000000,\n                \"currency\": \"IDR\"\n            },\n            \"createdAt\": \"2025-12-08T10:00:00.000Z\"\n        }\n    ]\n}\n\n ```\n\n**2\\. Success - Landlord View (200 OK)**  \n_Scenario: A Landlord requesting bookings made on their properties. Includes_ `_tenant_` _details._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Bookings retrieved successfully\",\n    \"data\": [\n        {\n            \"id\": \"booking-uuid-456\",\n            \"status\": \"ACTIVE\",\n            \"startDate\": \"2025-12-25T00:00:00.000Z\",\n            \"endDate\": \"2026-01-25T00:00:00.000Z\",\n            \"property\": {\n                \"id\": \"prop-uuid-777\",\n                \"title\": \"Sunny Villa in Bali\",\n                \"city\": \"Bali\",\n                \"image\": \"http://minio.rentverse.com/rentverse-public/properties/villa.jpg\"\n            },\n            \"payment\": {\n                \"invoiceId\": \"inv-uuid-888\",\n                \"status\": \"PAID\",\n                \"amount\": 25000000,\n                \"currency\": \"IDR\"\n            },\n            \"tenant\": {\n                \"name\": \"John Doe\",\n                \"avatarUrl\": \"http://minio.rentverse.com/rentverse-public/avatars/john.jpg\"\n            },\n            \"createdAt\": \"2025-12-08T11:30:00.000Z\"\n        }\n    ]\n}\n\n ```\n\n**3\\. Error: Unauthorized (401 Unauthorized)**  \n_Scenario: Token is missing or invalid._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"You are not logged in. Please log in to get access.\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/bookings' \\\n--header &#x27;Authorization: Bearer <YOUR_ACCESS_TOKEN>&#x27;\n\n ```"
+          },
+          "response": []
+        }
+      ],
+      "id": "a7a91e83-63a2-4cc2-825c-41c4786923b4"
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "Pay",
+          "id": "1ee1801e-5fa8-4db9-a390-8057b5f3b3a8",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payments/pay/:invoiceId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "pay",
+                ":invoiceId"
+              ],
+              "variable": [
+                {
+                  "key": "invoiceId",
+                  "value": "2128d6fc-9312-4a8f-8005-06feeba3e8fc"
+                }
+              ]
+            },
+            "description": "### 📄 Endpoint: Create Payment Transaction (Get Snap Token)\n\n**Description:**  \nThis endpoint initiates a payment transaction for a specific invoice. It communicates with the **Midtrans Snap API** to generate a unique **Payment Token** and **Redirect URL**.\n\n- **Mobile App:** Use the `token` to invoke the Midtrans SDK (Android/iOS).\n    \n- **Web/WebView:** Open the `redirect_url` to show the hosted payment page.\n    \n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/payments/pay/:invoiceId`\n    \n- **Authentication:** `Bearer` (Role: `TENANT` only)\n    \n\n---\n\n#### Mq Request\n\n**Path Variables:**\n\n| Key | Type | Description | Example |\n| --- | --- | --- | --- |\n| `invoiceId` | String (UUID) | **Mandatory.** The unique ID of the invoice you want to pay. | `z9y8x7w6-v5u4-3t2s-1r0q-p9o8n7m6l5k4` |\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** The token of the **Tenant** who owns the booking. |\n\n**Body:** None.\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK)**  \n_Transaction created successfully. Use the token to pay._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Payment token generated\",\n    \"data\": {\n        \"token\": \"c7d2301b-5e48-4c79-8b65-8f2b7e1f4b8c\",\n        \"redirect_url\": \"https://app.sandbox.midtrans.com/snap/v2/vtweb/c7d2301b-5e48-4c79-8b65-8f2b7e1f4b8c\"\n    }\n}\n\n ```\n\n**2\\. Error: Unauthorized Access (403 Forbidden)**  \n_Scenario: A user tries to pay for an invoice that belongs to someone else._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Unauthorized access to this invoice\"\n}\n\n ```\n\n**3\\. Error: Already Paid (400 Bad Request)**  \n_Scenario: The invoice status is already_ `_PAID_`_._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Invoice is already paid\"\n}\n\n ```\n\n**4\\. Error: Invoice Not Found (404 Not Found)**  \n_Scenario: The_ `_invoiceId_` _does not exist._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Invoice not found\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location --request POST 'http://localhost:3000/api/v1/payments/pay/YOUR_INVOICE_ID' \\\n--header &#x27;Authorization: Bearer <YOUR_TENANT_ACCESS_TOKEN>&#x27;\n\n ```"
+          },
+          "response": []
+        },
+        {
+          "name": "Handle Midtrans Webhook",
+          "id": "1f8ae87b-407d-4ce1-b13f-495602ce4663",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payments/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "webhook"
+              ]
+            },
+            "description": "### 📄 Endpoint: Handle Midtrans Webhook\n\n**Description:**  \nThis is a **Public Endpoint** designed to be called by the Midtrans Server (not your mobile app). It acts as a listener for real-time transaction status updates.\n\n- **Flow:** When a user pays via Snap, Midtrans sends a POST request to this URL.\n    \n- **Logic:** The system verifies the notification, and if valid, updates the `Invoice` status to `PAID`, activates the `Booking`, and triggers the **Trust Engine** to reward the tenant.\n    \n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/payments/webhook`\n    \n- **Authentication:** None (Public - Security is handled via Signature Verification inside the service).\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Content-Type` | `application/json` | **Required.** Standard Midtrans format. |\n\n**Body (raw JSON):**  \n_This is the standard payload sent by Midtrans._\n\n``` json\n{\n  \"transaction_time\": \"2025-12-07 14:05:12\",\n  \"transaction_status\": \"settlement\",\n  \"transaction_id\": \"7878d212-32...\",\n  \"status_message\": \"midtrans payment notification\",\n  \"status_code\": \"200\",\n  \"signature_key\": \"9d901b22...\",\n  \"payment_type\": \"credit_card\",\n  \"order_id\": \"z9y8x7w6-v5u4-3t2s-1r0q-p9o8n7m6l5k4\",\n  \"merchant_id\": \"G12345\",\n  \"gross_amount\": \"15000000.00\",\n  \"fraud_status\": \"accept\",\n  \"currency\": \"IDR\"\n}\n\n ```\n\n| Key | Type | Description |\n| --- | --- | --- |\n| `order_id` | String | **Crucial.** Matches the `invoiceId` in your database. |\n| `transaction_status` | String | The new status (e.g., `settlement`, `capture`, `expire`, `deny`). |\n| `fraud_status` | String | Fraud detection result (e.g., `accept`, `challenge`). |\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK)**  \n_The server successfully received and processed (or queued) the notification. Always returns 200 to tell Midtrans \"Stop retrying\"._\n\n``` text\nOK\n\n ```\n\n---\n\n### 💻 Testing Instructions (Localhost)\n\nSince Midtrans cannot send requests to `localhost`, you must use a tunneling service.\n\n1. **Start Ngrok:**\n    \n    ``` bash\n       ngrok http 3000\n    \n     ```\n    \n2. **Copy URL:** e.g., `https://a1b2-c3d4.ngrok.io`\n    \n3. **Configure Midtrans Dashboard (Sandbox):**\n    \n    - Go to **Settings > Configuration**.\n        \n    - Set **Notification URL** to: `https://YOUR-NGROK-URL/api/v1/payments/webhook`.\n        \n4. **Simulate Payment:**\n    \n    - Create a transaction in your app.\n        \n    - Use the **Midtrans Simulator** to pay.\n        \n    - Check your terminal logs for: `[Payment] Webhook received for...`"
+          },
+          "response": []
+        }
+      ],
+      "id": "724f8e6d-8ae5-440d-ace6-34a87eb2fda2"
+    },
+    {
+      "name": "Finance",
+      "item": [
+        {
+          "name": "Get User Wallet",
+          "id": "6ce857a3-4e4d-4290-b2fa-c82dd44b3362",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/finance/wallet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "finance",
+                "wallet"
+              ]
+            },
+            "description": "### 📄 Endpoint: Get User Wallet\n\n**Description:**  \nThis endpoint retrieves the authenticated user's digital wallet details, including the current balance and the history of recent transactions (e.g., rent income, withdrawals).\n\n- **Auto-Creation:** If the user does not have a wallet yet, this endpoint automatically creates one with a `0` balance.\n    \n- **Method:** `GET`\n    \n- **URL:** `{{base_url}}/finance/wallet`\n    \n- **Authentication:** `Bearer` (Available to **Landlords** and **Tenants**)\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** The JWT access token of the logged-in user. |\n\n**Body:** None.\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (200 OK) - Wallet Found**  \n_Returns the balance and list of transactions._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Wallet retrieved successfully\",\n    \"data\": {\n        \"id\": \"wallet-uuid-12345\",\n        \"userId\": \"user-uuid-9876\",\n        \"balance\": \"14250000\",\n        \"currency\": \"IDR\",\n        \"updatedAt\": \"2025-12-07T10:00:00.000Z\",\n        \"transactions\": [\n            {\n                \"id\": \"tx-uuid-1\",\n                \"walletId\": \"wallet-uuid-12345\",\n                \"amount\": \"14250000\",\n                \"type\": \"CREDIT\",\n                \"category\": \"RENT_INCOME\",\n                \"description\": \"Income from Invoice #inv-123 (Fee: 750000)\",\n                \"referenceId\": \"inv-123\",\n                \"balanceAfter\": \"14250000\",\n                \"createdAt\": \"2025-12-07T10:00:00.000Z\"\n            }\n        ]\n    }\n}\n\n ```\n\n**2\\. Success (200 OK) - New Empty Wallet**  \n_Scenario: User accesses wallet for the first time._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Wallet retrieved successfully\",\n    \"data\": {\n        \"id\": \"wallet-uuid-new\",\n        \"userId\": \"user-uuid-9876\",\n        \"balance\": \"0\",\n        \"currency\": \"IDR\",\n        \"transactions\": []\n    }\n}\n\n ```\n\n**3\\. Error: Unauthorized (401 Unauthorized)**  \n_Scenario: Token is missing or expired._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"You are not logged in. Please log in to get access.\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/finance/wallet' \\\n--header &#x27;Authorization: Bearer <YOUR_ACCESS_TOKEN>&#x27;\n\n ```"
+          },
+          "response": []
+        },
+        {
+          "name": "Request Payout",
+          "id": "1bba7da1-5aed-40b2-86fa-7c0bcc8af0cf",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"bankName\": \"BCA\",\n  \"accountNo\": \"1234567890\",\n  \"accountName\": \"John Doe\",\n  \"notes\": \"Rent withdrawal for December\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/finance/payout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "finance",
+                "payout"
+              ]
+            },
+            "description": "### 📄 Endpoint: Request Payout (Withdrawal)\n\n**Description:**  \nThis endpoint allows a **Verified Landlord** to request a withdrawal of their earnings from their digital wallet to a bank account.\n\n- **Logic:** The system immediately checks if the wallet has sufficient balance. If yes, it deducts the amount (locks the funds) and creates a `PENDING` payout request.\n    \n- **Method:** `POST`\n    \n- **URL:** `{{base_url}}/finance/payout`\n    \n- **Authentication:** `Bearer` (Role: `LANDLORD` only)\n    \n\n---\n\n#### 📨 Request\n\n**Headers:**\n\n| Key | Value | Description |\n| --- | --- | --- |\n| `Authorization` | `Bearer {{access_token}}` | **Required.** Must be a User with role `LANDLORD`. |\n| `Content-Type` | `application/json` | **Required.** |\n\n**Body (raw JSON):**\n\n``` json\n{\n  \"amount\": 1500000,\n  \"bankName\": \"BCA\",\n  \"accountNo\": \"1234567890\",\n  \"accountName\": \"John Doe\",\n  \"notes\": \"Rent withdrawal for December\"\n}\n\n ```\n\n| Key | Type | Requirement | Description |\n| --- | --- | --- | --- |\n| `amount` | Number | **Mandatory** | The amount to withdraw. Min `50000`. |\n| `bankName` | String | **Mandatory** | Name of the destination bank (e.g., \"BCA\", \"Mandiri\"). |\n| `accountNo` | String | **Mandatory** | The bank account number. |\n| `accountName` | String | **Mandatory** | The name of the account holder. |\n| `notes` | String | Optional | Any additional remarks for the admin. |\n\n---\n\n#### ✅ Response Examples\n\n**1\\. Success (201 Created)**  \n_Funds locked, request created._\n\n``` json\n{\n    \"status\": \"success\",\n    \"message\": \"Payout request created successfully\",\n    \"data\": {\n        \"id\": \"payout-uuid-12345\",\n        \"walletId\": \"wallet-uuid-67890\",\n        \"amount\": \"1500000\",\n        \"status\": \"PENDING\",\n        \"bankName\": \"BCA\",\n        \"accountNo\": \"1234567890\",\n        \"accountName\": \"John Doe\",\n        \"notes\": \"Rent withdrawal for December\",\n        \"createdAt\": \"2025-12-08T10:00:00.000Z\"\n    }\n}\n\n ```\n\n**2\\. Error: Insufficient Balance (400 Bad Request)**  \n_Scenario: Wallet balance is lower than the requested amount._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Insufficient wallet balance\"\n}\n\n ```\n\n**3\\. Error: Validation Failure (400 Bad Request)**  \n_Scenario: Amount is too small or missing fields._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"Validation Error: amount: Minimum withdrawal is 50,000\"\n}\n\n ```\n\n**4\\. Error: Unauthorized (403 Forbidden)**  \n_Scenario: A Tenant tries to request a payout._\n\n``` json\n{\n    \"status\": \"fail\",\n    \"message\": \"You do not have permission to perform this action\"\n}\n\n ```\n\n---\n\n#### 💻 cURL Example\n\n``` bash\ncurl --location 'http://localhost:3000/api/v1/finance/payout' \\\n--header 'Content-Type: application/json' \\\n--header &#x27;Authorization: Bearer <YOUR_LANDLORD_TOKEN>&#x27; \\\n--data '{\n    \"amount\": 500000,\n    \"bankName\": \"Mandiri\",\n    \"accountNo\": \"987654321\",\n    \"accountName\": \"Jane Landlord\"\n}'\n\n ```\n\n---\n\n### ⚠️ Pre-requisites for Testing\n\n1. **Have Balance:** Ensure your Landlord account has received funds via the Payment Flow (Rent Payment). You can check your balance using `GET /finance/wallet`.\n    \n2. **Verify Role:** Ensure you are using the token of a `LANDLORD`."
+          },
+          "response": []
+        }
+      ],
+      "id": "ffe32c04-fb05-4cee-96ca-b1f08e75abd4"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "Bearer {{access_token}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "Authorization",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "c8a85acb-c8e7-4a0b-a87a-3e780605114c",
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "7718674e-bab9-416d-b2c6-27ff3e275702",
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "id": "182520d2-aad3-4cb0-bfa1-4cf50e934c14",
+      "key": "base_url",
+      "value": ""
+    },
+    {
+      "id": "208a5a9c-7bb8-41a2-bea3-f4e1fac8c896",
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "id": "9cbba962-20c8-476b-8846-fad26fa95100",
+      "key": "refresh_token",
+      "value": ""
+    }
+  ]
+}
