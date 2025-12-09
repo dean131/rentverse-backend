@@ -14,6 +14,7 @@ import bookingRoutes from "./modules/booking/booking.routes.js";
 import paymentRoutes from "./modules/payment/payment.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
 import chatRoutes from "./modules/chat/chat.routes.js";
+import landlordRoutes from "./modules/landlord/landlord.routes.js";
 
 const app: Application = express();
 
@@ -69,6 +70,7 @@ app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/finance", financeRoutes);
 app.use("/api/v1/chats", chatRoutes);
+app.use("/api/v1/landlord", landlordRoutes);
 
 // Handle 404 - Not Found
 app.use((req: Request, res: Response) => {
