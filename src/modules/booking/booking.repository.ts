@@ -70,7 +70,7 @@ class BookingRepository {
     role: string, 
     limit = 10, 
     cursor?: string,
-    filters?: { search?: string; status?: string } // [NEW] Accept filters
+    filters?: { search?: string; status?: string } // Accept filters
   ) {
     // 1. Base Filter (User Role)
     const where: Prisma.BookingWhereInput = {};
@@ -81,12 +81,12 @@ class BookingRepository {
       where.property = { landlordId: userId };
     }
 
-    // 2. [NEW] Status Filter (e.g., "PENDING_PAYMENT", "ACTIVE")
+    // 2. Status Filter (e.g., "PENDING_PAYMENT", "ACTIVE")
     if (filters?.status && filters.status !== 'ALL') {
       where.status = filters.status;
     }
 
-    // 3. [NEW] Search Filter (Search by Property Title)
+    // 3. Search Filter (Search by Property Title)
     if (filters?.search) {
       where.property = {
         ...(where.property || {}), // Preserve existing relation filter
@@ -127,6 +127,42 @@ class BookingRepository {
     ]);
 
     return { total, bookings };
+  }
+
+  /**
+   * Find a booking specifically for a landlord (Ownership check)
+   */
+  async findForLandlord(bookingId: string, landlordId: string) {
+    return await prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        property: { landlordId }, // Ensure landlord owns the property
+      },
+      include: {
+        property: true,
+        tenant: { select: { email: true, name: true, id: true } }
+      }
+    });
+  }
+
+  /**
+   * Update Booking Status
+   */
+  async updateStatus(
+    bookingId: string, 
+    status: string, 
+    reason?: string
+  ) {
+    // If rejected, we might want to store the reason in metadata or a separate field.
+    // For now, we'll assume metadata usage or just status update.
+    return await prisma.booking.update({
+      where: { id: bookingId },
+      data: { 
+        status,
+        // Optional: Save rejection reason in metadata if schema supports it
+        // metadata: reason ? { rejectionReason: reason } : undefined 
+      },
+    });
   }
 }
 

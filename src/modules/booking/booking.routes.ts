@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bookingController from "./booking.controller.js";
 import validate from "../../middleware/validate.middleware.js";
-import { createBookingSchema } from "./booking.schema.js";
+import { createBookingSchema, rejectBookingSchema } from "./booking.schema.js";
 import { verifyToken, requireRole } from "../../middleware/auth.middleware.js";
 
 const router = Router();
@@ -17,5 +17,21 @@ router.post(
 
 // Get My Bookings (Tenant & Landlord)
 router.get("/", verifyToken, bookingController.getMine);
+
+// [NEW] Landlord Routes
+router.post(
+  "/:id/confirm",
+  verifyToken,
+  requireRole("LANDLORD"),
+  bookingController.confirm
+);
+
+router.post(
+  "/:id/reject",
+  verifyToken,
+  requireRole("LANDLORD"),
+  validate(rejectBookingSchema),
+  bookingController.reject
+);
 
 export default router;

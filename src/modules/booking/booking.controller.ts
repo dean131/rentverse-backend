@@ -26,6 +26,19 @@ class BookingController {
 
     return sendInfiniteList(res, data, meta, "Bookings retrieved successfully");
   });
+
+  confirm = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await bookingService.confirmBooking(req.user!.id, id);
+    return sendSuccess(res, result, "Booking confirmed successfully");
+  });
+
+  reject = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const result = await bookingService.rejectBooking(req.user!.id, id, reason);
+    return sendSuccess(res, result, "Booking rejected");
+  });
 }
 
 export default new BookingController();
