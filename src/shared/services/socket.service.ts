@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import logger from "../../config/logger.js";
 import prisma from "../../config/prisma.js";
+import eventBus from "../bus/event-bus.js";
 
-// Types for Socket Data
 interface AuthSocket extends Socket {
   user?: {
     id: string;
@@ -16,24 +16,22 @@ interface AuthSocket extends Socket {
 class SocketService {
   private io: Server | null = null;
 
-  /**
-   * Initialize Socket.IO attached to the HTTP Server
-   */
   init(httpServer: HttpServer) {
     this.io = new Server(httpServer, {
       cors: {
-        origin: "*", // Allow all origins for mobile apps
+        origin: "*",
         methods: ["GET", "POST"],
       },
       pingTimeout: 60000,
     });
 
-    // 1. Authentication Middleware
-    this.io.use(async (socket: AuthSocket, next) => {
+    // 1. Auth Middleware
+    this.io.use((socket: AuthSocket, next) => {
       try {
-        // Support token in Auth Header or Handshake Auth object
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-        
+        const token =
+          socket.handshake.auth.token ||
+          socket.handshake.headers.authorization?.split(" ")[1];
+
         if (!token) {
           return next(new Error("Authentication error: Token required"));
         }
@@ -46,21 +44,21 @@ class SocketService {
       }
     });
 
-    // 2. Connection Handler
+    // 2. Connection Logic
     this.io.on("connection", (socket: AuthSocket) => {
       const userId = socket.user!.id;
       logger.info(`[Socket] User connected: ${userId}`);
 
-      // Join a private room for the user (for direct notifications)
+      // A. Join Personal Room (For Inbox Updates)
       socket.join(userId);
 
-      // Handle Joining a Specific Chat Room
+      // B. Join Chat Room (Explicit Action)
       socket.on("JOIN_ROOM", (roomId: string) => {
         logger.debug(`[Socket] User ${userId} joined room ${roomId}`);
         socket.join(roomId);
       });
 
-      // Handle Sending Messages
+      // C. Handle Messages
       socket.on("SEND_MESSAGE", async (payload) => {
         await this.handleMessage(socket, payload);
       });
@@ -73,34 +71,58 @@ class SocketService {
     logger.info("[INFO] Socket.IO Service Initialized");
   }
 
-  /**
-   * Handle Incoming Message Event
-   */
   private async handleMessage(socket: AuthSocket, payload: any) {
     const { roomId, content } = payload;
     const senderId = socket.user!.id;
 
     try {
-      // A. Save to Database
-      const message = await prisma.chatMessage.create({
-        data: {
-          roomId,
-          senderId,
-          content,
-          isRead: false,
-        },
+      // 1. Validation: Ensure User belongs to Room
+      // (Optional optimization: cache this check)
+      const room = await prisma.chatRoom.findUnique({
+        where: { id: roomId },
+        select: { id: true, tenantId: true, landlordId: true },
       });
 
-      // B. Update Room "Last Message" timestamp (for sorting list)
+      if (!room) {
+        socket.emit("ERROR", { message: "Room not found" });
+        return;
+      }
+      if (room.tenantId !== senderId && room.landlordId !== senderId) {
+        socket.emit("ERROR", { message: "Unauthorized" });
+        return;
+      }
+
+      // 2. Save to Database
+      const message = await prisma.chatMessage.create({
+        data: { roomId, senderId, content, isRead: false },
+      });
+
       await prisma.chatRoom.update({
         where: { id: roomId },
         data: { lastMessageAt: new Date() },
       });
 
-      // C. Broadcast to everyone in the room (including sender for confirmation)
+      // 3. Broadcast to Chat Room (Active Screen)
       this.io?.to(roomId).emit("NEW_MESSAGE", message);
 
-      // D. Optional: Send Push Notification to offline users here (Phase 6)
+      // 4. [NEW] Broadcast to Receiver's Inbox (List Screen)
+      const receiverId = senderId === room.tenantId ? room.landlordId : room.tenantId;
+      
+      this.io?.to(receiverId).emit("INBOX_UPDATE", {
+        roomId: room.id,
+        content: message.content,       // Snippet
+        createdAt: message.createdAt,
+        senderId: senderId,
+      });
+
+      // 5. Publish to Event Bus (Trust Engine & Push Notifs)
+      eventBus.publish("CHAT:MESSAGE_SENT", {
+        messageId: message.id,
+        roomId: message.roomId,
+        senderId: message.senderId,
+        content: message.content,
+        createdAt: message.createdAt,
+      });
 
     } catch (error) {
       logger.error("[Socket] Message Error:", error);
@@ -109,7 +131,7 @@ class SocketService {
   }
 
   /**
-   * Public method to send notifications from other modules (e.g., BookingService)
+   * Helper to send generic real-time alerts
    */
   sendNotification(userId: string, event: string, data: any) {
     if (this.io) {

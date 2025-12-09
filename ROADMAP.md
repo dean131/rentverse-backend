@@ -1,4 +1,4 @@
-# 🗺️ Rentverse Project Roadmap (v2.5 - Live Status)
+# 🗺️ Rentverse Project Roadmap (v2.7 - Live Status)
 
 **Core Shift:** Mobile-First for Users (Tenant/Landlord) | Web-Based for Admin Operations.
 **Focus:** Secure Identity, Trust Engine Accuracy, and High-Performance Mobile Feed.
@@ -25,7 +25,7 @@
 - [x] **Push Notification System**
   - [x] `NotificationModule` decoupled via Event Bus.
   - [x] `POST /notifications/device`: Store/Update FCM Device Tokens.
-  - [x] **Welcome Alert:** Auto-sends push notification on registration.
+  - [x] **Smart Alerts:** Welcome, Chat Message, and Booking Request notifications.
 - [x] **KYC System (Secure Storage)**
   - [x] **Private Bucket:** Configure MinIO for private access (ID Cards).
   - [x] `POST /kyc/upload`: Multipart upload & signed URL generation.
@@ -41,40 +41,31 @@
   - [x] **EAV Attributes:** Dynamic specs (Bedroom, WiFi, etc).
   - [x] **Portable Media:** DB stores relative paths; API returns full URLs dynamically.
 - [x] **Mobile Search Feed**
-  - [x] `GET /properties`: **Refactored to Infinite Scroll** (Cursor-based pagination).
+  - [x] `GET /properties`: **Infinite Scroll** (Cursor-based pagination).
   - [x] **Detail View:** `GET /properties/:id` implemented (Includes Landlord Profile).
   - [x] **Filters:** Search by City, Title, Price.
-- [ ] **Engagement**
-  - [ ] `POST /favorites/:id`: "Like" functionality.
-  - [ ] `GET /favorites`: List liked properties.
 - [x] **Booking System**
   - [x] `POST /bookings`: Create request (Returns details for "Review & Pay" screen).
   - [x] `GET /bookings`: "My Bookings" list with Search, Filter & Cursor Pagination.
+- [ ] **Engagement (Pending)**
+  - [ ] `POST /favorites/:id`: "Like" functionality.
+  - [ ] `GET /favorites`: List liked properties.
 
 ---
 
 ## ⚖️ Phase 3: The Trust Engine
-**Status:** 🚧 **IN PROGRESS** (Foundation ready, Logic pending)
+**Status:** ✅ **CORE LOGIC COMPLETE** (Dashboard Pending)
 
 - [x] **Data Model**
   - [x] `TrustLog` schema updated (Actor, Metadata, SourceType).
 - [x] **Scoring Infrastructure**
-  - [x] `TrustService` initialized.
+  - [x] **Unit of Work Pattern:** Service handles transactions, Repository handles atomic DB ops.
   - [x] **Event Listener:** `AUTH:USER_REGISTERED` initializes score.
-- [x] **Advanced Logic**
+- [x] **Advanced Logic (Automated Rewards)**
   - [x] **Payment Listener:** `PAYMENT:PAID` event rewards Tenant (+2.0 TTI).
-  - [ ] **Chat Listener:** Update LRS on fast response.
-- [ ] **Trust Dashboard**
+  - [x] **Chat Listener:** `CHAT:MESSAGE_SENT` rewards Landlord (+1.0 LRS) for <30m response.
+- [ ] **Trust Dashboard (Mobile)**
   - [ ] `GET /trust/history`: API for the mobile score graph.
-
----
-
-## 🛡️ Phase 4: Admin Dashboard & Overrides
-**Status:** 📅 **PLANNED** (Week 5)
-
-- [ ] `GET /admin/users`: Table view with Scores.
-- [ ] `POST /admin/trust/adjust`: Manual override with audit log.
-- [ ] `POST /disputes/resolve`: Dispute handling.
 
 ---
 
@@ -94,14 +85,28 @@
 ---
 
 ## 💬 Phase 5.5: Real-Time Communication
-**Status:** 🚀 **NEXT UP**
+**Status:** ✅ **COMPLETE**
 
-- [ ] **Socket.IO Server:** Auth middleware & Connection handling.
-- [ ] **Chat Module:**
-  - [ ] `POST /chats/start`: Initiate conversation (Tenant -> Landlord).
-  - [ ] `GET /chats`: List conversation history.
-  - [ ] `GET /chats/:roomId/messages`: Load chat logs.
-- [ ] **WhatsApp Integration (Evolution API):** Send OTPs & Alerts (Deferred).
+- [x] **Socket.IO Server:**
+  - [x] JWT Authentication Middleware.
+  - [x] **Hybrid Sync:** Broadcasts to Chat Room (Active Screen) + Personal Channel (Inbox List).
+- [x] **Chat Module (REST API):**
+  - [x] `POST /chats/start`: Initiate conversation (Idempotent).
+  - [x] `GET /chats`: List conversation history (Cursor Pagination).
+  - [x] `GET /chats/:roomId/messages`: Load chat logs (Cursor Pagination).
+
+---
+
+## 🛡️ Phase 4: Admin Dashboard & Overrides
+**Status:** 🚀 **NEXT UP** (Week 5)
+
+- [ ] **User Management**
+  - [ ] `GET /admin/users`: Table view (Filters: Role, KYC Status, Trust Score).
+- [ ] **Trust Governance**
+  - [ ] `POST /admin/trust/adjust`: Manual override with audit log (e.g., "Good behavior bonus").
+  - [ ] `POST /admin/users/:id/verify`: Approve/Reject KYC documents.
+- [ ] **Disputes**
+  - [ ] `POST /disputes/resolve`: Specialized override for resolving booking conflicts.
 
 ---
 

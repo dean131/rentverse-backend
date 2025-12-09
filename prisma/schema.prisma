@@ -342,6 +342,7 @@ model TrustLog {
   referenceType String? 
   actor         String  @default("SYSTEM") 
   metadata      Json?   
+  sourceType    String  @default("AUTOMATED")
 
   tenantId   String?
   tenant     TenantTrustProfile? @relation(fields: [tenantId], references: [id])

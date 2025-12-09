@@ -1,27 +1,66 @@
 import eventBus from "../../shared/bus/event-bus.js";
 import trustService from "./trust.service.js";
-import logger from "config/logger.js";
-import trustRepository from "./trust.repository.js";
+import prisma from "../../config/prisma.js";
+import logger from "../../config/logger.js";
 
-/**
- * Register all Event Listeners for the Trust Module.
- */
 export const registerTrustSubscribers = () => {
-  // 1. Auth Listener
-  eventBus.subscribe("AUTH:USER_REGISTERED", async (payload) => {
-    await trustService.initializeTrustScore(payload.userId, payload.role);
+  logger.info("⚖️ Trust Subscribers Registered");
+
+  // 1. Init Profile
+  eventBus.subscribe("AUTH:USER_REGISTERED", async (payload: any) => {
+    await trustService.initializeProfile(payload.userId, payload.role);
   });
 
-  // 2. [NEW] Payment Listener -> Reward Tenant
-  eventBus.subscribe("PAYMENT:PAID", async (payload) => {
-    logger.info(`[Trust] Rewarding tenant ${payload.tenantId} for payment.`);
+  // 2. Payment Reward (Tenant)
+  eventBus.subscribe("PAYMENT:PAID", async (payload: any) => {
+    await trustService.applySystemReward(
+      payload.tenantId,
+      "TENANT",
+      "PAYMENT_ON_TIME",
+      {
+        referenceId: payload.invoiceId,
+        referenceType: "INVOICE",
+        description: "Paid invoice on time",
+      }
+    );
+  });
 
-    await trustRepository.createLogAndUpdateScore(payload.tenantId, "TENANT", {
-      eventCode: "PAYMENT_ON_TIME",
-      impact: 2.0, // +2 Points
-      description: `Rent payment successful for invoice ${payload.invoiceId}`,
-      actor: "SYSTEM",
-      sourceType: "AUTOMATED",
-    });
+  // 3. Chat Response Reward (Landlord)
+  eventBus.subscribe("CHAT:MESSAGE_SENT", async (payload: any) => {
+    try {
+      // Gather Data (Read-Only) to decide if we should call the service
+      const room = await prisma.chatRoom.findUnique({ where: { id: payload.roomId } });
+      if (!room || room.landlordId !== payload.senderId) return;
+
+      const lastMessages = await prisma.chatMessage.findMany({
+        where: { roomId: payload.roomId },
+        orderBy: { createdAt: "desc" },
+        take: 2,
+      });
+
+      if (lastMessages.length < 2) return;
+      if (lastMessages[1].senderId !== room.tenantId) return;
+
+      // Calculate Logic
+      const diffMinutes = Math.floor(
+        (lastMessages[0].createdAt.getTime() - lastMessages[1].createdAt.getTime()) / 60000
+      );
+
+      if (diffMinutes <= 30) {
+        // Execute Reward
+        await trustService.applySystemReward(
+          payload.senderId,
+          "LANDLORD",
+          "COMM_FAST_RESPONSE",
+          {
+            referenceId: payload.roomId,
+            referenceType: "CHAT_ROOM",
+            description: `Responded in ${diffMinutes} mins`,
+          }
+        );
+      }
+    } catch (error) {
+      logger.error("[Trust] Chat event processing error:", error);
+    }
   });
 };

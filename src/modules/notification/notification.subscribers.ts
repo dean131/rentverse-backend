@@ -1,27 +1,88 @@
 import eventBus from "../../shared/bus/event-bus.js";
 import notificationService from "./notification.service.js";
+import prisma from "../../config/prisma.js";
+import logger from "../../config/logger.js";
 
 export const registerNotificationSubscribers = () => {
-  
-  // 1. Welcome Message
-  eventBus.subscribe("AUTH:USER_REGISTERED", async (payload) => {
-    await notificationService.sendToUser(
-      payload.userId,
-      "Welcome to Rentverse! 🏠",
-      "Your account is ready. Complete your profile to start your journey."
-    );
+  logger.info("🔔 Notification Subscribers Registered");
+
+  // ---------------------------------------------------------
+  // 1. WELCOME NOTIFICATION
+  // ---------------------------------------------------------
+  eventBus.subscribe("AUTH:USER_REGISTERED", async (payload: any) => {
+    try {
+      await notificationService.sendToUser(
+        payload.userId,
+        "Welcome to Rentverse! 🏠",
+        "Your account has been successfully created. Start exploring properties now!",
+        {
+          type: "WELCOME",
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+      logger.debug(`[Notification] Welcome sent to ${payload.userId}`);
+    } catch (error) {
+      logger.error("[Notification] Failed to send welcome:", error);
+    }
   });
 
-  // 2. Booking Alert for Landlord
-  eventBus.subscribe("BOOKING:CREATED", async (payload) => {
-    await notificationService.sendToUser(
-      payload.landlordId,
-      "New Booking Request! 📅",
-      `Someone wants to book ${payload.propertyTitle}. Check your dashboard.`,
-      { type: "BOOKING_REQUEST", bookingId: payload.bookingId }
-    );
+  // ---------------------------------------------------------
+  // 2. CHAT MESSAGE NOTIFICATION
+  // ---------------------------------------------------------
+  eventBus.subscribe("CHAT:MESSAGE_SENT", async (payload: any) => {
+    try {
+      const room = await prisma.chatRoom.findUnique({
+        where: { id: payload.roomId },
+        select: { tenantId: true, landlordId: true },
+      });
+
+      if (!room) return;
+
+      const receiverId =
+        payload.senderId === room.tenantId ? room.landlordId : room.tenantId;
+
+      const sender = await prisma.user.findUnique({
+        where: { id: payload.senderId },
+        select: { name: true },
+      });
+      const senderName = sender?.name || "Someone";
+
+      await notificationService.sendToUser(
+        receiverId,
+        `New message from ${senderName}`, // Title
+        payload.content,                  // Body
+        {                                 // Data (Optional 4th arg)
+          type: "CHAT_MESSAGE",
+          roomId: payload.roomId,
+          senderId: payload.senderId,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+
+      logger.debug(`[Notification] Chat push sent to ${receiverId}`);
+    } catch (error) {
+      logger.error("[Notification] Failed to process chat event:", error);
+    }
   });
 
-  // Trust Score Updates (Future)
-  // eventBus.subscribe("TRUST:SCORE_CHANGED", ...);
+  // ---------------------------------------------------------
+  // 3. BOOKING CREATED
+  // ---------------------------------------------------------
+  eventBus.subscribe("BOOKING:CREATED", async (payload: any) => {
+    try {
+      await notificationService.sendToUser(
+        payload.landlordId,
+        "New Booking Request! 📅",
+        `You have a new booking request for ${payload.propertyTitle}. Check it now!`,
+        {
+          type: "BOOKING_REQUEST",
+          bookingId: payload.bookingId,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+      logger.debug(`[Notification] Booking alert sent to landlord ${payload.landlordId}`);
+    } catch (error) {
+      logger.error("[Notification] Failed to process booking event:", error);
+    }
+  });
 };
