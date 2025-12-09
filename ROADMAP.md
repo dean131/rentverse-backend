@@ -1,11 +1,12 @@
-# 🗺️ Rentverse Project Roadmap (v3.0 - Landlord Pivot)
+# 🗺️ Rentverse Project Roadmap (v3.1 - Admin Focus)
 
-**Core Shift:** Prioritizing Landlord Experience (Supply Side) before Admin Tools.
-**Focus:** Inventory Management, Business Stats, and Booking Control.
+**Current Status:** Landlord Operations are live. Now building internal Admin Tools.
+**Focus:** User Verification, Trust Governance, and Dispute Resolution.
 
 ---
 
 ## 🏁 Phase 0: Foundation & Infrastructure (Week 1)
+
 **Status:** ✅ **COMPLETE**
 
 - [x] **Project Initialization** (Node.js 24 + TS, Modular Monolith).
@@ -16,6 +17,7 @@
 ---
 
 ## 📱 Phase 1: Identity, Auth & Notifications (Week 2)
+
 **Status:** ✅ **COMPLETE**
 
 - [x] **Secure Auth Module**
@@ -30,6 +32,7 @@
 ---
 
 ## 🏠 Phase 2: Rental Marketplace API (Week 3)
+
 **Status:** ✅ **COMPLETE**
 
 - [x] **Property Management**
@@ -45,6 +48,7 @@
 ---
 
 ## ⚖️ Phase 3: The Trust Engine
+
 **Status:** ✅ **CORE LOGIC COMPLETE**
 
 - [x] **Scoring Infrastructure**
@@ -57,6 +61,7 @@
 ---
 
 ## 💬 Phase 5.5: Real-Time Communication
+
 **Status:** ✅ **COMPLETE**
 
 - [x] **Socket.IO Server:** Real-time messages & Inbox updates.
@@ -65,30 +70,39 @@
 ---
 
 ## 🔑 Phase 2.5: Landlord Operations (Supply Side)
-**Status:** 🚀 **NEXT UP** (Week 5)
 
-- [ ] **Landlord Dashboard**
-  - [ ] `GET /landlord/dashboard`: Stats (Total Income, Active Bookings, LRS Score).
-- [ ] **Inventory Management**
-  - [ ] `GET /landlord/properties`: "My Listings" (Private view with Status).
-  - [ ] `PATCH /properties/:id`: Update listing details/price.
-  - [ ] `DELETE /properties/:id`: Archive listing.
-- [ ] **Booking Control**
-  - [ ] `POST /bookings/:id/confirm`: Manual approval (optional workflow).
-  - [ ] `POST /bookings/:id/reject`: Reject request with reason.
+**Status:** ✅ **COMPLETE** (Week 5)
+
+- [x] **Landlord Dashboard**
+  - [x] `GET /landlord/dashboard`: Stats (Total Income, Active Bookings, LRS Score).
+- [x] **Inventory Management**
+  - [x] `GET /landlord/properties`: "My Listings" (Private view with Stats).
+  - [x] `PATCH /properties/:id`: Update listing metadata.
+  - [x] `DELETE /properties/:id`: Soft delete listing.
+- [x] **Booking Control**
+  - [x] `POST /bookings/:id/confirm`: Manual approval with notification.
+  - [x] `POST /bookings/:id/reject`: Decline request with reason & notification.
 
 ---
 
 ## 🛡️ Phase 4: Admin Dashboard & Overrides
-**Status:** ⏸️ **PAUSED** (Postponed)
 
-- [ ] **User Management** (`GET /admin/users`).
-- [ ] **Trust Governance** (`POST /admin/trust/adjust`).
-- [ ] **Disputes** (`POST /disputes/resolve`).
+**Status:** 🚀 **NEXT UP** (Week 6)
+
+- [ ] **User Management**
+  - [ ] `GET /admin/users`: Table view (Filters: Role, KYC Status, Trust Score).
+  - [ ] `GET /admin/users/:id`: Detailed profile view.
+- [ ] **Trust Governance**
+  - [ ] `POST /admin/users/:id/verify`: Approve/Reject KYC documents.
+  - [ ] `POST /admin/trust/adjust`: Manual score override (with audit log).
+- [ ] **Disputes & Resolutions**
+  - [ ] `POST /disputes/resolve`: Force cancel booking & refund (if applicable).
 
 ---
 
 ## 🤖 Phase 6: AI Readiness
+
 **Status:** 📅 **PLANNED**
 
 - [ ] **Shadow Mode:** `isDraft` flag in logs for future AI suggestions.
+- [ ] **Data Pipeline:** Export anonymized `TrustLog` for model training.

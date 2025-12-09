@@ -1,39 +1,31 @@
 import { Request, Response, NextFunction } from "express";
-// Use 'ZodType' instead of 'ZodSchema'
 import { ZodType, ZodError } from "zod";
 import AppError from "../shared/utils/AppError.js";
 
-/**
- * Higher-Order Function to validate request body against a Zod Schema.
- * @param schema - The Zod schema object (z.object, z.array, etc.)
- */
+type DataSource = "body" | "query" | "params";
+
 const validate =
-  (schema: ZodType) =>
+  (schema: ZodType, source: DataSource = "body") =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // 1. Validate & Transform
-      // parseAsync allows for async refinements
-      const parsedBody = await schema.parseAsync(req.body);
+      const data = req[source];
+      const parsedData = await schema.parseAsync(data);
 
-      // 2. Replace req.body with valid/transformed data
-      req.body = parsedBody;
+      if (source === "body") {
+        req.body = parsedData;
+      } else {
+        // Safe mutation for query/params
+        Object.assign(req[source], parsedData);
+      }
 
       next();
     } catch (error) {
-      // 3. Handle Zod Errors
       if (error instanceof ZodError) {
         const errorMessage = error.issues
-          .map((issue) => {
-            const path = issue.path.join(".");
-            return path ? `${path}: ${issue.message}` : issue.message;
-          })
+          .map((e) => `${e.path.join(".")}: ${e.message}`)
           .join(", ");
-
-        // Pass to Global Error Handler as 400 Bad Request
         return next(new AppError(`Validation Error: ${errorMessage}`, 400));
       }
-
-      // Pass unexpected errors
       next(error);
     }
   };
