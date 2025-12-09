@@ -225,46 +225,62 @@ class BookingService {
     };
   }
 
-  /**
-   * [NEW] Confirm Booking
-   */
   async confirmBooking(landlordId: string, bookingId: string) {
-    // 1. Verify Ownership & Existence
-    const booking = await bookingRepository.findForLandlord(bookingId, landlordId);
+    const booking = await bookingRepository.findForLandlord(
+      bookingId,
+      landlordId
+    );
     if (!booking) throw new AppError("Booking request not found", 404);
 
-    // 2. Validate Current Status
-    if (booking.status !== "PENDING_PAYMENT" && booking.status !== "PENDING_CONFIRMATION") {
-      throw new AppError(`Cannot confirm booking with status ${booking.status}`, 400);
+    if (
+      booking.status !== "PENDING_PAYMENT" &&
+      booking.status !== "PENDING_CONFIRMATION"
+    ) {
+      throw new AppError(
+        `Cannot confirm booking with status ${booking.status}`,
+        400
+      );
     }
 
-    // 3. Update Status
-    const updated = await bookingRepository.updateStatus(bookingId, "CONFIRMED");
+    const updated = await bookingRepository.updateStatus(
+      bookingId,
+      "CONFIRMED"
+    );
 
-    // 4. Trigger Notification (Optional)
-    // eventBus.publish("BOOKING:CONFIRMED", { ... });
+    // Trigger Notification
+    eventBus.publish("BOOKING:CONFIRMED", {
+      bookingId: booking.id,
+      tenantId: booking.tenantId,
+      propertyTitle: booking.property.title,
+    });
 
     return updated;
   }
 
-  /**
-   * [NEW] Reject Booking
-   */
   async rejectBooking(landlordId: string, bookingId: string, reason: string) {
-    // 1. Verify Ownership
-    const booking = await bookingRepository.findForLandlord(bookingId, landlordId);
+    const booking = await bookingRepository.findForLandlord(
+      bookingId,
+      landlordId
+    );
     if (!booking) throw new AppError("Booking request not found", 404);
 
-    // 2. Validate Status
     if (["CANCELLED", "REJECTED", "COMPLETED"].includes(booking.status)) {
       throw new AppError("Booking is already finalized", 400);
     }
 
-    // 3. Update Status
-    const updated = await bookingRepository.updateStatus(bookingId, "REJECTED", reason);
+    const updated = await bookingRepository.updateStatus(
+      bookingId,
+      "REJECTED",
+      reason
+    );
 
-    // 4. Trigger Refund Logic (If Paid) or Notification
-    // eventBus.publish("BOOKING:REJECTED", { ... });
+    // Trigger Notification
+    eventBus.publish("BOOKING:REJECTED", {
+      bookingId: booking.id,
+      tenantId: booking.tenantId,
+      propertyTitle: booking.property.title,
+      reason,
+    });
 
     return updated;
   }

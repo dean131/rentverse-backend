@@ -53,6 +53,20 @@ export interface EventMap {
     content: string;
     createdAt: Date;
   };
+
+  // Booking Decisions
+  "BOOKING:CONFIRMED": {
+    bookingId: string;
+    tenantId: string;
+    propertyTitle: string;
+  };
+
+  "BOOKING:REJECTED": {
+    bookingId: string;
+    tenantId: string;
+    propertyTitle: string;
+    reason: string;
+  };
 }
 
 export type EventKey = keyof EventMap;

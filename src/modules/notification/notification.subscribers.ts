@@ -50,8 +50,9 @@ export const registerNotificationSubscribers = () => {
       await notificationService.sendToUser(
         receiverId,
         `New message from ${senderName}`, // Title
-        payload.content,                  // Body
-        {                                 // Data (Optional 4th arg)
+        payload.content, // Body
+        {
+          // Data (Optional 4th arg)
           type: "CHAT_MESSAGE",
           roomId: payload.roomId,
           senderId: payload.senderId,
@@ -80,9 +81,56 @@ export const registerNotificationSubscribers = () => {
           click_action: "FLUTTER_NOTIFICATION_CLICK",
         }
       );
-      logger.debug(`[Notification] Booking alert sent to landlord ${payload.landlordId}`);
+      logger.debug(
+        `[Notification] Booking alert sent to landlord ${payload.landlordId}`
+      );
     } catch (error) {
       logger.error("[Notification] Failed to process booking event:", error);
+    }
+  });
+
+  // Booking Confirmed -> Notify Tenant
+  eventBus.subscribe("BOOKING:CONFIRMED", async (payload) => {
+    try {
+      await notificationService.sendToUser(
+        payload.tenantId,
+        "Booking Confirmed! 🎉",
+        `Your booking for ${payload.propertyTitle} has been accepted. Get ready to move in!`,
+        {
+          type: "BOOKING_STATUS",
+          bookingId: payload.bookingId,
+          status: "CONFIRMED",
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+      logger.debug(
+        `[Notification] Booking Confirm sent to ${payload.tenantId}`
+      );
+    } catch (error) {
+      logger.error(
+        "[Notification] Failed to send booking confirmation:",
+        error
+      );
+    }
+  });
+
+  // Booking Rejected -> Notify Tenant
+  eventBus.subscribe("BOOKING:REJECTED", async (payload) => {
+    try {
+      await notificationService.sendToUser(
+        payload.tenantId,
+        "Booking Update 😔",
+        `Your request for ${payload.propertyTitle} was declined. Reason: ${payload.reason}`,
+        {
+          type: "BOOKING_STATUS",
+          bookingId: payload.bookingId,
+          status: "REJECTED",
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+      logger.debug(`[Notification] Booking Reject sent to ${payload.tenantId}`);
+    } catch (error) {
+      logger.error("[Notification] Failed to send booking rejection:", error);
     }
   });
 };
