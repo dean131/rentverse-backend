@@ -1,30 +1,41 @@
-import { Router } from 'express';
-import propertiesController from './properties.controller.js';
-import upload from '../../middleware/upload.middleware.js';
-import validate from '../../middleware/validate.middleware.js';
-import { createPropertySchema } from './properties.schema.js';
-import { verifyToken, requireRole } from '../../middleware/auth.middleware.js';
+import { Router } from "express";
+import propertiesController from "./properties.controller.js";
+import upload from "../../middleware/upload.middleware.js";
+import validate from "../../middleware/validate.middleware.js";
+import {
+  createPropertySchema,
+  updatePropertySchema,
+} from "./properties.schema.js";
+import { verifyToken, requireRole } from "../../middleware/auth.middleware.js";
 
 const router = Router();
 
-/**
- * PUBLIC ROUTES
- * Anyone can search and view properties.
- */
-router.get('/', propertiesController.getAll);
-router.get('/:id', propertiesController.getOne);
+// Public
+router.get("/", propertiesController.getAll);
+router.get("/:id", propertiesController.getOne);
 
-/**
- * PROTECTED ROUTES (LANDLORD ONLY)
- * Only Verified Landlords can create listings.
- */
+// Protected (Landlord)
+router.use(verifyToken, requireRole("LANDLORD")); // Guard below routes
+
+// Create
 router.post(
-  '/', 
-  verifyToken, 
-  requireRole('LANDLORD'), 
-  upload.array('images', 10), // Allow up to 10 images
-  validate(createPropertySchema), 
+  "/",
+  upload.array("images", 10),
+  validate(createPropertySchema),
   propertiesController.create
 );
+
+// [NEW] Update (Metadata)
+// We use upload.none() to parse multipart fields if sent as form-data,
+// OR just JSON body if sent as raw JSON.
+router.patch(
+  "/:id",
+  upload.none(),
+  validate(updatePropertySchema),
+  propertiesController.update
+);
+
+// [NEW] Delete
+router.delete("/:id", propertiesController.delete);
 
 export default router;

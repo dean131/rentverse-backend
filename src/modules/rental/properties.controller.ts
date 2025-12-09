@@ -58,6 +58,29 @@ class PropertiesController {
       "Property details retrieved successfully"
     );
   });
+
+  /**
+   * Update Property
+   */
+  update = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    // req.body is validated by middleware
+    const result = await propertiesService.updateProperty(
+      req.user!.id,
+      id,
+      req.body
+    );
+    return sendSuccess(res, result, "Property updated successfully");
+  });
+
+  /**
+   * Delete Property
+   */
+  delete = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    await propertiesService.deleteProperty(req.user!.id, id);
+    return sendSuccess(res, null, "Property deleted successfully");
+  });
 }
 
 export default new PropertiesController();

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/prisma.js";
-import { CreatePropertyInput } from "./properties.schema.js";
+import { CreatePropertyInput, UpdatePropertyInput } from "./properties.schema.js";
 
 class PropertiesRepository {
   /**
@@ -16,7 +16,7 @@ class PropertiesRepository {
         landlordId,
         title: data.title,
         description: data.description,
-        
+
         // Location & Specs
         address: data.address,
         city: data.city,
@@ -71,7 +71,7 @@ class PropertiesRepository {
   async findAll(
     where: Prisma.PropertyWhereInput,
     limit: number,
-    cursor?: string, 
+    cursor?: string,
     orderBy: Prisma.PropertyOrderByWithRelationInput = { createdAt: "desc" }
   ) {
     // If cursor exists, skip the cursor itself (skip: 1)
@@ -96,10 +96,10 @@ class PropertiesRepository {
           },
           propertyType: { select: { label: true } },
           listingType: { select: { label: true } },
-          attributes: { 
+          attributes: {
             include: { attributeType: true },
-            take: 3 // Optimize: Only fetch top 3 specs for the card view
-          }, 
+            take: 3, // Optimize: Only fetch top 3 specs for the card view
+          },
         },
       }),
     ]);
@@ -118,20 +118,81 @@ class PropertiesRepository {
         propertyType: true,
         listingType: true,
         allowedBillingPeriods: { include: { billingPeriod: true } },
-        attributes: { include: { attributeType: true } },        
+        attributes: { include: { attributeType: true } },
         landlord: {
           select: {
             id: true,
             name: true,
             avatarUrl: true,
-            createdAt: true, 
+            createdAt: true,
             isVerified: true,
-            landlordProfile: { 
-              select: { lrs_score: true, response_rate: true }
-            }
-          }
-        }
+            landlordProfile: {
+              select: { lrs_score: true, response_rate: true },
+            },
+          },
+        },
       },
+    });
+  }
+
+  /**
+   * [NEW] Update Property
+   * Handles complex relation updates (Attributes, BillingPeriods).
+   */
+  async update(id: string, data: UpdatePropertyInput) {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Prepare Update Object
+      const updateData: Prisma.PropertyUpdateInput = {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        address: data.address,
+        city: data.city,
+        amenities: data.amenities, // Replaces the whole array
+        updatedAt: new Date(),
+      };
+
+      // 2. Handle Billing Periods (Replace Strategy)
+      if (data.billingPeriodIds) {
+        updateData.allowedBillingPeriods = {
+          deleteMany: {}, // Clear old
+          create: data.billingPeriodIds.map((bpId) => ({
+            billingPeriodId: bpId,
+          })),
+        };
+      }
+
+      // 3. Handle EAV Attributes (Replace Strategy)
+      if (data.attributes) {
+        updateData.attributes = {
+          deleteMany: {}, // Clear old specs
+          create: data.attributes.map((attr) => ({
+            attributeTypeId: attr.attributeTypeId,
+            value: attr.value,
+          })),
+        };
+      }
+
+      // 4. Execute Update
+      return await tx.property.update({
+        where: { id },
+        data: updateData,
+        include: {
+          attributes: { include: { attributeType: true } },
+          allowedBillingPeriods: true,
+          images: true,
+        },
+      });
+    });
+  }
+
+  /**
+   * Soft Delete (Archive)
+   */
+  async softDelete(id: string) {
+    return await prisma.property.update({
+      where: { id },
+      data: { deletedAt: new Date() },
     });
   }
 }

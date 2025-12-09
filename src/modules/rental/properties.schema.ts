@@ -49,4 +49,44 @@ export const createPropertySchema = z.object({
   )).optional().default([]),
 });
 
+// Update Schema
+// We reuse the shape of createSchema but make fields optional
+export const updatePropertySchema = z.object({
+  title: z.string().min(5).optional(),
+  description: z.string().optional(),
+  price: z.coerce.number().positive().optional(),
+  
+  // Locations
+  address: z.string().optional(),
+  city: z.string().optional(),
+  
+  // Relations (JSON Strings if multipart, or raw arrays if JSON)
+  amenities: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch (e) { return []; }
+    }
+    return val;
+  }, z.array(z.string())).optional(),
+
+  attributes: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch (e) { return []; }
+    }
+    return val;
+  }, z.array(
+    z.object({
+      attributeTypeId: z.number().int(),
+      value: z.any().transform(String),
+    })
+  )).optional(),
+  
+  billingPeriodIds: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch (e) { return []; }
+    }
+    return val;
+  }, z.array(z.number().int())).optional(),
+});
+
+export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
