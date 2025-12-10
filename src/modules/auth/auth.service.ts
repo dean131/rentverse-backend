@@ -4,6 +4,8 @@ import crypto from "crypto";
 import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 import authRepository from "./auth.repository.js";
+import { SendOtpInput, VerifyOtpInput } from "./auth.schema.js";
+import otpService from "./otp.service.js";
 import {
   RegisterInput,
   LoginInput,
@@ -143,6 +145,53 @@ class AuthService {
     });
     const { password, ...safeUser } = updated;
     return safeUser;
+  }
+
+  /**
+   * Send OTP
+   */
+  async sendVerificationOtp(input: SendOtpInput) {
+    // Business Logic: You might want to check if user exists here if strict,
+    // or just allow sending to prevent enumeration attacks.
+    return await otpService.sendOtp(input.target, input.channel);
+  }
+
+  /**
+   * Verify OTP & Update User Status
+   */
+  async verifyUserOtp(input: VerifyOtpInput) {
+    // 1. Verify Logic (Redis)
+    const isValid = await otpService.verifyOtp(input.target, input.channel, input.code);
+    
+    if (!isValid) {
+      throw new AppError("Invalid or expired OTP", 400);
+    }
+
+    // 2. Find User (Repository Call)
+    const user = await authRepository.findUserByEmailOrPhone(input.target);
+
+    if (!user) {
+      // Logic decision: OTP is valid, but no user found in DB.
+      return { message: "OTP verified successfully", isUserUpdated: false };
+    }
+
+    // 3. Prepare Update Data
+    const updateData: { 
+      emailVerifiedAt?: Date; 
+      phoneVerifiedAt?: Date; 
+      isVerified?: boolean 
+    } = { isVerified: true };
+
+    if (input.channel === "EMAIL") {
+      updateData.emailVerifiedAt = new Date();
+    } else {
+      updateData.phoneVerifiedAt = new Date();
+    }
+
+    // 4. Update User (Repository Call)
+    await authRepository.updateUserVerification(user.id, updateData);
+
+    return { message: "User verified successfully", isUserUpdated: true };
   }
 }
 

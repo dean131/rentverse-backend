@@ -37,6 +37,22 @@ class AuthController {
     const result = await authService.updateProfile(req.user!.id, req.body);
     return sendSuccess(res, result, "Profile updated successfully");
   });
+
+  /**
+   * [NEW] POST /auth/otp/send
+   */
+  sendOtp = catchAsync(async (req: Request, res: Response) => {
+    const result = await authService.sendVerificationOtp(req.body);
+    return sendSuccess(res, result, "OTP sent successfully");
+  });
+
+  /**
+   * [NEW] POST /auth/otp/verify
+   */
+  verifyOtp = catchAsync(async (req: Request, res: Response) => {
+    const result = await authService.verifyUserOtp(req.body);
+    return sendSuccess(res, result, "Verification successful");
+  });
 }
 
 export default new AuthController();

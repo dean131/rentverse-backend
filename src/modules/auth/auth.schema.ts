@@ -27,7 +27,21 @@ export const updateProfileSchema = z.object({
   phone: z.string().min(10, "Phone number must be valid").optional(),
 });
 
-// Type Inference
+export const sendOtpSchema = z.object({
+  target: z.string().min(5, "Valid Email or Phone is required"),
+  channel: z.enum(["EMAIL", "WHATSAPP"], {
+    message: "Channel must be EMAIL or WHATSAPP",
+  }),
+});
+
+export const verifyOtpSchema = z.object({
+  target: z.string().min(5),
+  channel: z.enum(["EMAIL", "WHATSAPP"]),
+  code: z.string().length(6, "OTP must be 6 digits"),
+});
+
+export type SendOtpInput = z.infer<typeof sendOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

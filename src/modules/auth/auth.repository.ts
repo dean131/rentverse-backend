@@ -75,6 +75,36 @@ class AuthRepository {
       data,
     });
   }
+
+  /**
+   * [NEW] Find user by Email OR Phone
+   * Used for OTP verification to find the account regardless of channel.
+   */
+  async findUserByEmailOrPhone(contact: string) {
+    return await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: contact },
+          { phone: contact }
+        ]
+      }
+    });
+  }
+
+  /**
+   * [NEW] Update User Verification Status
+   * Dynamically updates emailVerifiedAt or phoneVerifiedAt
+   */
+  async updateUserVerification(userId: string, data: { 
+    emailVerifiedAt?: Date; 
+    phoneVerifiedAt?: Date; 
+    isVerified?: boolean;
+  }) {
+    return await prisma.user.update({
+      where: { id: userId },
+      data: data,
+    });
+  }
 }
 
 export default new AuthRepository();

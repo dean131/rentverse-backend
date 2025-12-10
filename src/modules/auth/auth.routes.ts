@@ -2,6 +2,7 @@ import { Router } from "express";
 import authController from "./auth.controller.js";
 import validate from "../../middleware/validate.middleware.js";
 import { verifyToken } from "../../middleware/auth.middleware.js";
+import { sendOtpSchema, verifyOtpSchema } from "./auth.schema.js";
 import {
   registerSchema,
   loginSchema,
@@ -24,6 +25,19 @@ router.put(
   verifyToken,
   validate(updateProfileSchema),
   authController.updateProfile
+);
+
+// [NEW] OTP Routes
+router.post(
+  "/otp/send",
+  validate(sendOtpSchema),
+  authController.sendOtp
+);
+
+router.post(
+  "/otp/verify",
+  validate(verifyOtpSchema),
+  authController.verifyOtp
 );
 
 export default router;

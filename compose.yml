@@ -4,13 +4,16 @@ services:
   # ------------------------------------
   api:
     container_name: rentverse_api
-    # Wait for infrastructure to be fully ready
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
       minio:
+        condition: service_started
+      mailpit:
+        condition: service_started
+      waha:
         condition: service_started
     networks:
       - rentverse-net
@@ -27,12 +30,11 @@ services:
       POSTGRES_PASSWORD: supersecurepassword
       POSTGRES_DB: rentverse_db
     ports:
-      - "5432:5432" # Exposed for local DB tools (DBeaver/TablePlus)
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - rentverse-net
-    # Healthcheck to prevent API from connecting too early
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rentverse -d rentverse_db"]
       interval: 5s
@@ -72,10 +74,59 @@ services:
     networks:
       - rentverse-net
 
+  # -----------------------------------
+  # NEW: EMAIL TOOLS (Mailpit)
+  # -----------------------------------
+  mailpit:
+    image: axllent/mailpit
+    container_name: rentverse_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP Port (Backend connects here)
+      - "8025:8025" # Web UI (View emails here)
+    networks:
+      - rentverse-net
+
+  # -----------------------------------
+  # 6. WHATSAPP TOOLS (WAHA) - REPLACES EVOLUTION
+  # -----------------------------------
+  waha:
+    restart: always
+    container_name: rentverse_whatsapp
+    image: devlikeapro/waha:latest
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '10'
+    ports:
+      - "8080:3000"
+    volumes:
+      - 'waha_sessions:/app/.sessions'
+      - 'waha_media:/app/.media'
+    environment:
+      # Use the lightweight engine
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB 
+      - WAHA_API_KEY=ae274fee0f9f407fb843fa09700ac1ab
+      - WAHA_DASHBOARD_ENABLED=True
+      - WHATSAPP_SWAGGER_ENABLED=True
+      # Credentials for Dashboard
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=rentverse_pass
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=rentverse_pass
+    networks:
+      - rentverse-net
+
 volumes:
   pgdata:
   redisdata:
   miniodata:
+  waha_media:
+  waha_sessions:
 
 networks:
   rentverse-net:
