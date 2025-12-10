@@ -22,9 +22,6 @@ class AdminService {
     });
 
     const data = users.map((user) => {
-      // Determine Primary Role & Score
-      // (A user can theoretically be both, but usually has one primary active role context)
-      const roleNames = user.roles.map((r) => r.role.name);
       let score = 0;
       let kycStatus = "N/A";
 
@@ -43,7 +40,7 @@ class AdminService {
         email: user.email,
         phone: user.phone,
         avatarUrl: this.transformUrl(user.avatarUrl),
-        roles: roleNames,
+        roles: user.roles,
         trustScore: score,
         kycStatus: kycStatus,
         joinedAt: user.createdAt,
