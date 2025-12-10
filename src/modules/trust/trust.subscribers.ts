@@ -4,7 +4,7 @@ import prisma from "../../config/prisma.js";
 import logger from "../../config/logger.js";
 
 export const registerTrustSubscribers = () => {
-  logger.info("⚖️ Trust Subscribers Registered");
+  logger.info("[Trust] Subscribers Registered");
 
   // 1. Init Profile
   eventBus.subscribe("AUTH:USER_REGISTERED", async (payload: any) => {

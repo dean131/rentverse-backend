@@ -4,7 +4,7 @@ import prisma from "../../config/prisma.js";
 import logger from "../../config/logger.js";
 
 export const registerNotificationSubscribers = () => {
-  logger.info("🔔 Notification Subscribers Registered");
+  logger.info("[Notification] Subscribers Registered");
 
   // ---------------------------------------------------------
   // 1. WELCOME NOTIFICATION

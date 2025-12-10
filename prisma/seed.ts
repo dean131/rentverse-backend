@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 async function seedReferences() {
-  console.log("🌱 Seeding Reference Data...");
+  console.log("[Seed] Seeding Reference Data..."); // [UPDATED]
 
   // 1. Property Types
   const propTypes = [
@@ -53,13 +53,13 @@ async function seedReferences() {
 
   // 4. EAV Attributes
   const attributes = [
-    { slug: "bedroom", label: "Bedroom", dataType: "NUMBER", iconUrl: "bed" },
-    { slug: "bathroom", label: "Bathroom", dataType: "NUMBER", iconUrl: "bath" },
-    { slug: "area", label: "Building Area", dataType: "NUMBER", iconUrl: "ruler" },
-    { slug: "floor", label: "Number of Floors", dataType: "NUMBER", iconUrl: "layers" },
-    { slug: "furnishing", label: "Furnishing", dataType: "STRING", iconUrl: "sofa" },
-    { slug: "garage", label: "Garage Capacity", dataType: "NUMBER", iconUrl: "car" },
-    { slug: "electricity", label: "Electricity (VA)", dataType: "NUMBER", iconUrl: "zap" },
+    { slug: "bedroom", label: "Bedroom", dataType: "NUMBER" },
+    { slug: "bathroom", label: "Bathroom", dataType: "NUMBER" },
+    { slug: "area", label: "Building Area", dataType: "NUMBER" },
+    { slug: "floor", label: "Number of Floors", dataType: "NUMBER" },
+    { slug: "furnishing", label: "Furnishing", dataType: "STRING" },
+    { slug: "garage", label: "Garage Capacity", dataType: "NUMBER" },
+    { slug: "electricity", label: "Electricity (VA)", dataType: "NUMBER" },
   ];
   for (const attr of attributes) {
     await prisma.propertyAttributeType.upsert({
@@ -71,7 +71,7 @@ async function seedReferences() {
 }
 
 async function seedPermissions() {
-  console.log("🔐 Seeding Permissions...");
+  console.log("[Seed] Seeding Permissions..."); // [UPDATED]
   const permissions = [
     { action: "trust.score.update", description: "Update trust scores manually" },
     { action: "property.create", description: "Create new properties" },
@@ -91,7 +91,7 @@ async function seedPermissions() {
 }
 
 async function seedRolesAndAdmin() {
-  console.log("🛡️ Seeding Roles & Admin...");
+  console.log("[Seed] Seeding Roles & Admin..."); // [UPDATED]
   const roles = ["TENANT", "LANDLORD", "ADMIN"];
   const roleRecords: Record<string, any> = {};
 
@@ -130,7 +130,7 @@ async function seedRolesAndAdmin() {
 }
 
 async function seedDemoUsers() {
-  console.log("👥 Seeding Demo Users (Tenant & Landlord)...");
+  console.log("[Seed] Seeding Demo Users..."); // [UPDATED]
   const commonPassword = await bcrypt.hash("password123", 10);
   const tenantRole = await prisma.role.findUniqueOrThrow({ where: { name: "TENANT" } });
   const landlordRole = await prisma.role.findUniqueOrThrow({ where: { name: "LANDLORD" } });
@@ -151,7 +151,6 @@ async function seedDemoUsers() {
     update: { kyc_status: "VERIFIED", tti_score: 85.0 },
     create: { userRefId: tenant.id, kyc_status: "VERIFIED", tti_score: 85.0, ktpUrl: "rentverse-private/kyc/demo-tenant-ktp.jpg" },
   });
-  // [REVERTED] Wallet
   await prisma.wallet.upsert({
     where: { userId: tenant.id },
     update: {},
@@ -174,7 +173,6 @@ async function seedDemoUsers() {
     update: { kyc_status: "VERIFIED", lrs_score: 90.0 },
     create: { userRefId: landlord.id, kyc_status: "VERIFIED", lrs_score: 90.0, ktpUrl: "rentverse-private/kyc/demo-landlord-ktp.jpg" },
   });
-  // [REVERTED] Wallet
   await prisma.wallet.upsert({
     where: { userId: landlord.id },
     update: {},
@@ -183,7 +181,7 @@ async function seedDemoUsers() {
 }
 
 async function seedDemoProperties() {
-  console.log("🏠 Seeding Demo Properties...");
+  console.log("[Seed] Seeding Demo Properties..."); // [UPDATED]
   const landlord = await prisma.user.findUniqueOrThrow({ where: { email: "landlord@rentverse.com" } });
   
   const villaType = await prisma.propertyType.findUniqueOrThrow({ where: { slug: "villa" } });
@@ -206,7 +204,7 @@ async function seedDemoProperties() {
       latitude: -8.409518,
       longitude: 115.188919,
       price: 25000000, 
-      currency: "IDR", // [REVERTED] String
+      currency: "IDR", 
       isVerified: true,
       propertyTypeId: villaType.id,
       listingTypeId: rentType.id,
@@ -229,7 +227,7 @@ async function seedDemoProperties() {
       latitude: -6.292434,
       longitude: 106.799677,
       price: 2500000, 
-      currency: "IDR", // [REVERTED] String
+      currency: "IDR", 
       isVerified: false, 
       propertyTypeId: roomType.id,
       listingTypeId: rentType.id,
@@ -242,12 +240,14 @@ async function seedDemoProperties() {
 }
 
 async function seedTrustEvents() {
-  console.log("⚖️ Seeding Trust Scoring Rules...");
+  console.log("[Seed] Seeding Trust Scoring Rules..."); // [UPDATED]
   const events = [
     { code: "PAYMENT_LATE", category: "PAYMENT", role: "TENANT", baseImpact: -5.0, description: "Tenant paid rent after the due date" },
     { code: "PAYMENT_ON_TIME", category: "PAYMENT", role: "TENANT", baseImpact: 2.0, description: "Tenant paid rent on or before the due date" },
     { code: "COMM_FAST_RESPONSE", category: "COMMUNICATION", role: "LANDLORD", baseImpact: 3.0, description: "Landlord responds to inquiries within 30 minutes" },
     { code: "FAKE_LISTING", category: "ACCURACY", role: "LANDLORD", baseImpact: -50.0, description: "Landlord posted a verified fake listing" },
+    // [NEW] KYC Reward
+    { code: "KYC_VERIFIED", category: "COMPLIANCE", role: "TENANT", baseImpact: 10.0, description: "Identity verified by Admin" },
   ];
   for (const e of events) {
     await prisma.trustEvent.upsert({ where: { code: e.code }, update: { description: e.description }, create: e });
@@ -262,9 +262,9 @@ async function main() {
     await seedDemoUsers();
     await seedDemoProperties();
     await seedTrustEvents();
-    console.log("✅ Seeding Completed Successfully.");
+    console.log("[Seed] Completed Successfully."); // [UPDATED]
   } catch (e) {
-    console.error("❌ Seeding Failed:", e);
+    console.error("[Seed] Failed:", e); // [UPDATED]
     process.exit(1);
   } finally {
     await prisma.$disconnect();
