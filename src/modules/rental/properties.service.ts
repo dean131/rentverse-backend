@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 import propertiesRepository from "./properties.repository.js";
 import storageService from "../../shared/services/storage.service.js";
-import { CreatePropertyInput, UpdatePropertyInput } from "./properties.schema.js";
+import {
+  CreatePropertyInput,
+  UpdatePropertyInput,
+} from "./properties.schema.js";
 import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 
@@ -127,15 +130,22 @@ class PropertiesService {
   }
 
   /**
-   * [NEW] Update Property
+   *  Update Property
    */
-  async updateProperty(landlordId: string, propertyId: string, input: UpdatePropertyInput) {
+  async updateProperty(
+    landlordId: string,
+    propertyId: string,
+    input: UpdatePropertyInput
+  ) {
     // 1. Verify Ownership
     const property = await propertiesRepository.findById(propertyId);
-    
+
     if (!property) throw new AppError("Property not found", 404);
     if (property.landlordId !== landlordId) {
-      throw new AppError("You do not have permission to edit this property", 403);
+      throw new AppError(
+        "You do not have permission to edit this property",
+        403
+      );
     }
 
     // 2. Perform Update
@@ -144,15 +154,18 @@ class PropertiesService {
   }
 
   /**
-   * [NEW] Delete Property
+   *  Delete Property
    */
   async deleteProperty(landlordId: string, propertyId: string) {
     // 1. Verify Ownership
     const property = await propertiesRepository.findById(propertyId);
-    
+
     if (!property) throw new AppError("Property not found", 404);
     if (property.landlordId !== landlordId) {
-      throw new AppError("You do not have permission to delete this property", 403);
+      throw new AppError(
+        "You do not have permission to delete this property",
+        403
+      );
     }
 
     // 2. Soft Delete

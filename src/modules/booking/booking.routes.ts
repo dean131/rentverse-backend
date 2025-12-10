@@ -18,7 +18,7 @@ router.post(
 // Get My Bookings (Tenant & Landlord)
 router.get("/", verifyToken, bookingController.getMine);
 
-// [NEW] Landlord Routes
+//  Landlord Routes
 router.post(
   "/:id/confirm",
   verifyToken,

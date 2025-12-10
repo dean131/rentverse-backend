@@ -29,7 +29,9 @@ export const registerTrustSubscribers = () => {
   eventBus.subscribe("CHAT:MESSAGE_SENT", async (payload: any) => {
     try {
       // Gather Data (Read-Only) to decide if we should call the service
-      const room = await prisma.chatRoom.findUnique({ where: { id: payload.roomId } });
+      const room = await prisma.chatRoom.findUnique({
+        where: { id: payload.roomId },
+      });
       if (!room || room.landlordId !== payload.senderId) return;
 
       const lastMessages = await prisma.chatMessage.findMany({
@@ -43,7 +45,9 @@ export const registerTrustSubscribers = () => {
 
       // Calculate Logic
       const diffMinutes = Math.floor(
-        (lastMessages[0].createdAt.getTime() - lastMessages[1].createdAt.getTime()) / 60000
+        (lastMessages[0].createdAt.getTime() -
+          lastMessages[1].createdAt.getTime()) /
+          60000
       );
 
       if (diffMinutes <= 30) {
@@ -62,5 +66,21 @@ export const registerTrustSubscribers = () => {
     } catch (error) {
       logger.error("[Trust] Chat event processing error:", error);
     }
+  });
+
+  //  Handle KYC Verification Reward
+  eventBus.subscribe("KYC:VERIFIED", async (payload: any) => {
+    logger.info(`[Trust] Processing KYC Reward for ${payload.userId}`);
+
+    await trustService.applySystemReward(
+      payload.userId,
+      payload.role,
+      "KYC_VERIFIED", // Ensure this rule exists in DB
+      {
+        description: "Identity verified by Admin",
+        referenceId: payload.adminId,
+        referenceType: "ADMIN_ACTION",
+      }
+    );
   });
 };

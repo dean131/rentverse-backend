@@ -1,8 +1,9 @@
 import adminRepository from "./admin.repository.js";
-import { ListUsersQuery } from "./admin.schema.js";
+import { ListUsersQuery, VerifyUserInput } from "./admin.schema.js";
 import { env } from "../../config/env.js";
 import storageService from "shared/services/storage.service.js";
 import AppError from "shared/utils/AppError.js";
+import eventBus from "shared/bus/event-bus.js";
 
 class AdminService {
   private transformUrl(url: string | null | undefined) {
@@ -59,7 +60,7 @@ class AdminService {
   }
 
   /**
-   * [NEW] Get User Details + Decrypt KYC Images
+   *  Get User Details + Decrypt KYC Images
    */
   async getUserDetails(userId: string) {
     const user = await adminRepository.findUserById(userId);
@@ -78,14 +79,14 @@ class AdminService {
         status: user.tenantProfile.kyc_status,
         score: user.tenantProfile.tti_score,
         // Generate Signed URLs for Private Buckets
-        ktpUrl: user.tenantProfile.ktpUrl 
-          ? await storageService.getPresignedUrl(user.tenantProfile.ktpUrl) 
+        ktpUrl: user.tenantProfile.ktpUrl
+          ? await storageService.getPresignedUrl(user.tenantProfile.ktpUrl)
           : null,
-        selfieUrl: user.tenantProfile.selfieUrl 
-          ? await storageService.getPresignedUrl(user.tenantProfile.selfieUrl) 
+        selfieUrl: user.tenantProfile.selfieUrl
+          ? await storageService.getPresignedUrl(user.tenantProfile.selfieUrl)
           : null,
       };
-    } 
+    }
     // B. Check Landlord Profile (If not tenant, or if they have both, prioritize primary context)
     // Note: If a user is BOTH, you might want to return an array or object with both.
     // For simplicity, we'll override if they are a Landlord (or you can merge).
@@ -94,8 +95,8 @@ class AdminService {
         role: "LANDLORD",
         status: user.landlordProfile.kyc_status,
         score: user.landlordProfile.lrs_score,
-        ktpUrl: user.landlordProfile.ktpUrl 
-          ? await storageService.getPresignedUrl(user.landlordProfile.ktpUrl) 
+        ktpUrl: user.landlordProfile.ktpUrl
+          ? await storageService.getPresignedUrl(user.landlordProfile.ktpUrl)
           : null,
       };
       // If they are both, maybe return both? For now, let's attach Landlord data.
@@ -112,16 +113,55 @@ class AdminService {
       isVerified: user.isVerified,
       roles,
       createdAt: user.createdAt,
-      
+
       // Financial Info
-      wallet: user.wallet ? {
-        balance: Number(user.wallet.balance),
-        currency: user.wallet.currency
-      } : null,
+      wallet: user.wallet
+        ? {
+            balance: Number(user.wallet.balance),
+            currency: user.wallet.currency,
+          }
+        : null,
 
       // Verification Data (with Signed URLs)
-      kyc: kycData
+      kyc: kycData,
     };
+  }
+
+  async verifyUser(adminId: string, userId: string, input: VerifyUserInput) {
+    // 1. Get User Context (Local Repo)
+    const user = await adminRepository.findUserById(userId);
+    if (!user) throw new AppError("User not found", 404);
+
+    const role = user.roles[0].role.name;
+
+    // 2. Update Status in DB
+    await adminRepository.updateUserKycStatus(userId, role, input.status);
+
+    // 3. Handle Logic based on Decision
+    if (input.status === "VERIFIED") {
+      // A. Update Main User Flag
+      await adminRepository.setUserVerified(userId, true);
+
+      // B. Publish Event (Trust Module will pick this up)
+      eventBus.publish("KYC:VERIFIED", {
+        userId,
+        role,
+        adminId,
+      });
+    } else if (input.status === "REJECTED") {
+      // A. Ensure User is Unverified
+      await adminRepository.setUserVerified(userId, false);
+
+      // B. Publish Event (Notification Module will pick this up)
+      eventBus.publish("KYC:REJECTED", {
+        userId,
+        role,
+        adminId,
+        reason: input.rejectionReason || "Documents rejected",
+      });
+    }
+
+    return { message: `User KYC has been ${input.status.toLowerCase()}` };
   }
 }
 

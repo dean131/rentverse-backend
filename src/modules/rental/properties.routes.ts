@@ -25,7 +25,7 @@ router.post(
   propertiesController.create
 );
 
-// [NEW] Update (Metadata)
+//  Update (Metadata)
 // We use upload.none() to parse multipart fields if sent as form-data,
 // OR just JSON body if sent as raw JSON.
 router.patch(
@@ -35,7 +35,7 @@ router.patch(
   propertiesController.update
 );
 
-// [NEW] Delete
+//  Delete
 router.delete("/:id", propertiesController.delete);
 
 export default router;

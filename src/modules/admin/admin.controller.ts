@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import adminService from "./admin.service.js";
 import catchAsync from "../../shared/utils/catchAsync.js";
-import { sendPaginated, sendSuccess } from "../../shared/utils/response.helper.js";
+import {
+  sendPaginated,
+  sendSuccess,
+} from "../../shared/utils/response.helper.js";
 import { ListUsersQuery } from "./admin.schema.js";
 
 class AdminController {
@@ -13,7 +16,7 @@ class AdminController {
     };
 
     const { data, meta } = await adminService.getAllUsers(query);
-    
+
     return sendPaginated(
       res,
       data,
@@ -25,12 +28,22 @@ class AdminController {
   });
 
   /**
-   * [NEW] Get User Details
+   *  Get User Details
    */
   getUser = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = await adminService.getUserDetails(id);
     return sendSuccess(res, user, "User details retrieved successfully");
+  });
+
+  /**
+   * [NEW] Verify User
+   */
+  verifyUser = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    // req.body verified by middleware
+    const result = await adminService.verifyUser(req.user!.id, id, req.body);
+    return sendSuccess(res, result, "Verification processed successfully");
   });
 }
 

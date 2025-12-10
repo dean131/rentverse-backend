@@ -49,7 +49,12 @@ class ChatRepository {
   /**
    * List all conversations with Cursor Pagination.
    */
-  async findMyRooms(userId: string, role: string, limit: number, cursor?: string) {
+  async findMyRooms(
+    userId: string,
+    role: string,
+    limit: number,
+    cursor?: string
+  ) {
     const where: Prisma.ChatRoomWhereInput =
       role === "TENANT" ? { tenantId: userId } : { landlordId: userId };
 
@@ -63,8 +68,14 @@ class ChatRepository {
       cursor: cursorObj,
       orderBy: { lastMessageAt: "desc" }, // Most recent chat first
       include: {
-        tenant: role === "LANDLORD" ? { select: { name: true, avatarUrl: true } } : false,
-        landlord: role === "TENANT" ? { select: { name: true, avatarUrl: true } } : false,
+        tenant:
+          role === "LANDLORD"
+            ? { select: { name: true, avatarUrl: true } }
+            : false,
+        landlord:
+          role === "TENANT"
+            ? { select: { name: true, avatarUrl: true } }
+            : false,
         property: { select: { id: true, title: true, city: true } },
         messages: {
           take: 1,
@@ -101,7 +112,7 @@ class ChatRepository {
   }
 
   /**
-   * [NEW] Count total messages in a room
+   *  Count total messages in a room
    */
   async countMessages(roomId: string) {
     return await prisma.chatMessage.count({

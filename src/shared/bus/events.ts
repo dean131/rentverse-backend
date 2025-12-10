@@ -67,6 +67,20 @@ export interface EventMap {
     propertyTitle: string;
     reason: string;
   };
+
+  //  Admin Actions
+  "KYC:VERIFIED": {
+    userId: string;
+    role: string; // "TENANT" | "LANDLORD"
+    adminId: string; // For audit log
+  };
+
+  "KYC:REJECTED": {
+    userId: string;
+    role: string;
+    adminId: string;
+    reason: string;
+  };
 }
 
 export type EventKey = keyof EventMap;

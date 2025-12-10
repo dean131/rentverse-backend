@@ -4,7 +4,7 @@ export const startChatSchema = z.object({
   propertyId: z.string().uuid("Invalid Property ID format"),
 });
 
-// [NEW] Schema for listing conversations
+//  Schema for listing conversations
 export const getConversationsSchema = z.object({
   limit: z.coerce.number().min(1).max(50).default(20),
   cursor: z.string().uuid().optional(),

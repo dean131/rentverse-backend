@@ -66,17 +66,51 @@ class AdminRepository {
   }
 
   /**
-   * [NEW] Find User with detailed Trust Profiles
+   * Find User with detailed Trust Profiles
    */
   async findUserById(userId: string) {
     return await prisma.user.findUnique({
       where: { id: userId },
       include: {
         roles: { include: { role: true } },
-        tenantProfile: true,   // Contains ktpUrl, selfieUrl
+        tenantProfile: true, // Contains ktpUrl, selfieUrl
         landlordProfile: true, // Contains ktpUrl
         wallet: true,
       },
+    });
+  }
+
+  /**
+   * Update the Trust Profile status (Tenant or Landlord)
+   */
+  async updateUserKycStatus(userId: string, role: string, status: string) {
+    if (role === "TENANT") {
+      return await prisma.tenantTrustProfile.update({
+        where: { userRefId: userId },
+        data: {
+          kyc_status: status,
+          ktpVerifiedAt: status === "VERIFIED" ? new Date() : null,
+        },
+      });
+    } else {
+      return await prisma.landlordTrustProfile.update({
+        where: { userRefId: userId },
+        data: {
+          kyc_status: status,
+          ktpVerifiedAt: status === "VERIFIED" ? new Date() : null,
+        },
+      });
+    }
+  }
+
+  /**
+   *  Update the main User verified flag
+   * Keeps AdminModule independent of AuthModule
+   */
+  async setUserVerified(userId: string, isVerified: boolean) {
+    return await prisma.user.update({
+      where: { id: userId },
+      data: { isVerified },
     });
   }
 }

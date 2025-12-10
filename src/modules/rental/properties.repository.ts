@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/prisma.js";
-import { CreatePropertyInput, UpdatePropertyInput } from "./properties.schema.js";
+import {
+  CreatePropertyInput,
+  UpdatePropertyInput,
+} from "./properties.schema.js";
 
 class PropertiesRepository {
   /**
@@ -136,7 +139,7 @@ class PropertiesRepository {
   }
 
   /**
-   * [NEW] Update Property
+   *  Update Property
    * Handles complex relation updates (Attributes, BillingPeriods).
    */
   async update(id: string, data: UpdatePropertyInput) {

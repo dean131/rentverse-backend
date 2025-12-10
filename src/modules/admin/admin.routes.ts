@@ -2,7 +2,7 @@ import { Router } from "express";
 import adminController from "./admin.controller.js";
 import { verifyToken, requireRole } from "../../middleware/auth.middleware.js";
 import validate from "../../middleware/validate.middleware.js";
-import { listUsersSchema } from "./admin.schema.js";
+import { listUsersSchema, verifyUserSchema } from "./admin.schema.js";
 
 const router = Router();
 
@@ -17,5 +17,12 @@ router.get(
 );
 
 router.get("/users/:id", adminController.getUser);
+
+// [NEW] Verify
+router.post(
+  "/users/:id/verify",
+  validate(verifyUserSchema),
+  adminController.verifyUser
+);
 
 export default router;

@@ -105,12 +105,13 @@ class SocketService {
       // 3. Broadcast to Chat Room (Active Screen)
       this.io?.to(roomId).emit("NEW_MESSAGE", message);
 
-      // 4. [NEW] Broadcast to Receiver's Inbox (List Screen)
-      const receiverId = senderId === room.tenantId ? room.landlordId : room.tenantId;
-      
+      // 4.  Broadcast to Receiver's Inbox (List Screen)
+      const receiverId =
+        senderId === room.tenantId ? room.landlordId : room.tenantId;
+
       this.io?.to(receiverId).emit("INBOX_UPDATE", {
         roomId: room.id,
-        content: message.content,       // Snippet
+        content: message.content, // Snippet
         createdAt: message.createdAt,
         senderId: senderId,
       });
@@ -123,7 +124,6 @@ class SocketService {
         content: message.content,
         createdAt: message.createdAt,
       });
-
     } catch (error) {
       logger.error("[Socket] Message Error:", error);
       socket.emit("ERROR", { message: "Failed to send message" });

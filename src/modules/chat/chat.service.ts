@@ -97,7 +97,7 @@ class ChatService {
     const limit = Number(query.limit) || 50;
     const cursor = query.cursor as string | undefined;
 
-    // [NEW] Run Fetch and Count in parallel
+    //  Run Fetch and Count in parallel
     const [messages, total] = await Promise.all([
       chatRepository.findMessages(roomId, limit, cursor),
       chatRepository.countMessages(roomId),
@@ -119,7 +119,7 @@ class ChatService {
     return {
       data,
       meta: {
-        total, // [NEW] Added to satisfy interface
+        total, //  Added to satisfy interface
         limit,
         nextCursor,
         hasMore: !!nextCursor,

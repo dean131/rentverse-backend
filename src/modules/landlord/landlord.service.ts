@@ -17,7 +17,11 @@ class LandlordService {
     return {
       overview: {
         totalIncome: { amount: balance, currency, label: "Wallet Balance" },
-        occupancy: { active: stats.activeBookings, pending: stats.pendingRequests, label: "Active Bookings" },
+        occupancy: {
+          active: stats.activeBookings,
+          pending: stats.pendingRequests,
+          label: "Active Bookings",
+        },
         trust: { score: lrsScore, responseRate, label: "LRS Score" },
         inventory: { total: stats.totalProperties, label: "Listed Properties" },
       },
@@ -25,14 +29,19 @@ class LandlordService {
   }
 
   /**
-   * [NEW] Get Inventory List
+   *  Get Inventory List
    */
   async getInventory(landlordId: string, query: any) {
     const limit = Number(query.limit) || 10;
     const cursor = query.cursor as string | undefined;
     const search = query.search as string | undefined;
 
-    const { total, properties } = await landlordRepository.findMyProperties(landlordId, limit, cursor, search);
+    const { total, properties } = await landlordRepository.findMyProperties(
+      landlordId,
+      limit,
+      cursor,
+      search
+    );
 
     let nextCursor: string | null = null;
     if (properties.length === limit) {
