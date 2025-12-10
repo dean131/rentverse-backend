@@ -16,4 +16,6 @@ router.get(
   adminController.getUsers
 );
 
+router.get("/users/:id", adminController.getUser);
+
 export default router;

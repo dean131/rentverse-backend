@@ -64,6 +64,21 @@ class AdminRepository {
 
     return { total, users };
   }
+
+  /**
+   * [NEW] Find User with detailed Trust Profiles
+   */
+  async findUserById(userId: string) {
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        roles: { include: { role: true } },
+        tenantProfile: true,   // Contains ktpUrl, selfieUrl
+        landlordProfile: true, // Contains ktpUrl
+        wallet: true,
+      },
+    });
+  }
 }
 
 export default new AdminRepository();

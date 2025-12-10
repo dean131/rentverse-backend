@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import adminService from "./admin.service.js";
 import catchAsync from "../../shared/utils/catchAsync.js";
-import { sendPaginated } from "../../shared/utils/response.helper.js";
+import { sendPaginated, sendSuccess } from "../../shared/utils/response.helper.js";
 import { ListUsersQuery } from "./admin.schema.js";
 
 class AdminController {
@@ -22,6 +22,15 @@ class AdminController {
       meta.limit,
       "Users retrieved successfully"
     );
+  });
+
+  /**
+   * [NEW] Get User Details
+   */
+  getUser = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = await adminService.getUserDetails(id);
+    return sendSuccess(res, user, "User details retrieved successfully");
   });
 }
 
