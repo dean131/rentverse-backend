@@ -28,11 +28,8 @@ export const registerTrustSubscribers = () => {
   // 3. Chat Response Reward (Landlord)
   eventBus.subscribe("CHAT:MESSAGE_SENT", async (payload: any) => {
     try {
-      // Gather Data (Read-Only) to decide if we should call the service
-      const room = await prisma.chatRoom.findUnique({
-        where: { id: payload.roomId },
-      });
-      if (!room || room.landlordId !== payload.senderId) return;
+      const room = await prisma.chatRoom.findUnique({ where: { id: payload.roomId } });
+      if (!room || room.landlordId !== payload.senderId) return; // Only reward landlords
 
       const lastMessages = await prisma.chatMessage.findMany({
         where: { roomId: payload.roomId },
@@ -41,17 +38,13 @@ export const registerTrustSubscribers = () => {
       });
 
       if (lastMessages.length < 2) return;
-      if (lastMessages[1].senderId !== room.tenantId) return;
+      if (lastMessages[1].senderId !== room.tenantId) return; // Ensure replying to tenant
 
-      // Calculate Logic
       const diffMinutes = Math.floor(
-        (lastMessages[0].createdAt.getTime() -
-          lastMessages[1].createdAt.getTime()) /
-          60000
+        (lastMessages[0].createdAt.getTime() - lastMessages[1].createdAt.getTime()) / 60000
       );
 
       if (diffMinutes <= 30) {
-        // Execute Reward
         await trustService.applySystemReward(
           payload.senderId,
           "LANDLORD",
@@ -68,19 +61,30 @@ export const registerTrustSubscribers = () => {
     }
   });
 
-  //  Handle KYC Verification Reward
+  // 4. KYC Verification Bonus (Tenant/Landlord)
   eventBus.subscribe("KYC:VERIFIED", async (payload: any) => {
     logger.info(`[Trust] Processing KYC Reward for ${payload.userId}`);
-
     await trustService.applySystemReward(
       payload.userId,
-      payload.role,
-      "KYC_VERIFIED", // Ensure this rule exists in DB
+      payload.role, // "TENANT" or "LANDLORD"
+      "KYC_VERIFIED",
       {
         description: "Identity verified by Admin",
         referenceId: payload.adminId,
         referenceType: "ADMIN_ACTION",
       }
+    );
+  });
+
+  // 5. Admin Manual Adjustment (Governance)
+  eventBus.subscribe("ADMIN:TRUST_SCORE_ADJUSTED", async (payload: any) => {
+    logger.info(`[Trust] Processing Admin Override for ${payload.userId}`);
+    await trustService.applyManualAdjustment(
+      payload.adminId,
+      payload.userId,
+      payload.role,
+      payload.scoreDelta,
+      payload.reason
     );
   });
 };

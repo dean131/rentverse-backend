@@ -1,5 +1,5 @@
 import trustRepository from "./trust.repository.js";
-import prisma from "../../config/prisma.js"; // Service orchestrates the transaction
+import prisma from "../../config/prisma.js";
 import logger from "../../config/logger.js";
 
 class TrustService {
@@ -15,12 +15,12 @@ class TrustService {
   }
 
   /**
-   * Apply an Automated System Reward/Penalty
-   * Wraps the logic in a Database Transaction.
+   * 1. Automated System Reward
+   * Applies a pre-defined rule from the database (e.g., "PAYMENT_ON_TIME" = +2.0).
    */
   async applySystemReward(
     userId: string,
-    role: "TENANT" | "LANDLORD",
+    role: string,
     eventCode: string,
     context: {
       description?: string;
@@ -28,7 +28,7 @@ class TrustService {
       referenceType?: string;
     }
   ) {
-    // 1. Validation (Outside Transaction)
+    // A. Validation (Read-only, outside transaction)
     const rule = await trustRepository.findEventRule(eventCode);
 
     if (!rule) {
@@ -40,57 +40,113 @@ class TrustService {
       return null;
     }
 
-    // 2. Transaction Execution
+    // B. Execution (Transaction)
     try {
-      const newScore = await prisma.$transaction(async (tx) => {
+      return await prisma.$transaction(async (tx) => {
         let currentScore = 0;
-        let newCalculatedScore = 0;
         let profileId = "";
 
-        // A. Read Profile & Calculate Score
+        // 1. Get Current Profile
         if (role === "TENANT") {
           const profile = await trustRepository.getTenantProfile(userId, tx);
-          
-          // Logic: Clamp score between 0 and 100
-          newCalculatedScore = Math.max(0, Math.min(100, profile.tti_score + rule.baseImpact));
           profileId = profile.id;
-          
-          await trustRepository.updateTenantScore(userId, newCalculatedScore, tx);
+          currentScore = profile.tti_score;
         } else {
           const profile = await trustRepository.getLandlordProfile(userId, tx);
-          
-          newCalculatedScore = Math.max(0, Math.min(100, profile.lrs_score + rule.baseImpact));
           profileId = profile.id;
-          
-          await trustRepository.updateLandlordScore(userId, newCalculatedScore, tx);
+          currentScore = profile.lrs_score;
         }
 
-        // B. Create Audit Log
-        const finalDescription = context.description || rule.description || "System update";
-        
+        // 2. Calculate New Score (Clamped 0 - 100)
+        const newScore = Math.max(0, Math.min(100, currentScore + rule.baseImpact));
+
+        // 3. Update Database
+        if (role === "TENANT") {
+          await trustRepository.updateTenantScore(userId, newScore, tx);
+        } else {
+          await trustRepository.updateLandlordScore(userId, newScore, tx);
+        }
+
+        // 4. Create Audit Log
         await trustRepository.createLog({
           eventCode: rule.code,
           impact: rule.baseImpact,
-          scoreSnapshot: newCalculatedScore,
-          description: finalDescription,
+          scoreSnapshot: newScore,
+          description: context.description || rule.description || "System update",
           actor: "SYSTEM",
           sourceType: "AUTOMATED",
           referenceId: context.referenceId,
           referenceType: context.referenceType,
-          // Link dynamically based on role
           tenant: role === "TENANT" ? { connect: { id: profileId } } : undefined,
           landlord: role === "LANDLORD" ? { connect: { id: profileId } } : undefined,
         }, tx);
 
-        return newCalculatedScore;
+        logger.info(`[Trust] Applied ${eventCode} to ${role}. New Score: ${newScore}`);
+        return newScore;
       });
-
-      logger.info(`[Trust] Applied ${eventCode} to ${role}. New Score: ${newScore}`);
-      return newScore;
-
     } catch (error) {
       logger.error(`[Trust] Transaction failed for ${eventCode}:`, error);
-      throw error; // Re-throw to ensure caller knows it failed
+      throw error;
+    }
+  }
+
+  /**
+   * 2. Manual Admin Adjustment (Governance)
+   * Applies an arbitrary delta provided by an Admin (e.g., -15 or +5).
+   */
+  async applyManualAdjustment(
+    adminId: string,
+    userId: string,
+    role: "TENANT" | "LANDLORD",
+    delta: number,
+    reason: string
+  ) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        let currentScore = 0;
+        let profileId = "";
+
+        // 1. Get Current Profile
+        if (role === "TENANT") {
+          const profile = await trustRepository.getTenantProfile(userId, tx);
+          profileId = profile.id;
+          currentScore = profile.tti_score;
+        } else {
+          const profile = await trustRepository.getLandlordProfile(userId, tx);
+          profileId = profile.id;
+          currentScore = profile.lrs_score;
+        }
+
+        // 2. Calculate New Score (Clamped 0 - 100)
+        const newScore = Math.max(0, Math.min(100, currentScore + delta));
+
+        // 3. Update Database
+        if (role === "TENANT") {
+          await trustRepository.updateTenantScore(userId, newScore, tx);
+        } else {
+          await trustRepository.updateLandlordScore(userId, newScore, tx);
+        }
+
+        // 4. Create Audit Log (Source = MANUAL)
+        await trustRepository.createLog({
+          eventCode: "ADMIN_ADJUSTMENT",
+          impact: delta,
+          scoreSnapshot: newScore,
+          description: reason,
+          actor: "ADMIN",
+          referenceId: adminId,
+          referenceType: "ADMIN_USER",
+          sourceType: "MANUAL",
+          tenant: role === "TENANT" ? { connect: { id: profileId } } : undefined,
+          landlord: role === "LANDLORD" ? { connect: { id: profileId } } : undefined,
+        }, tx);
+
+        logger.info(`[Trust] Admin ${adminId} adjusted ${role} ${userId} by ${delta}. New Score: ${newScore}`);
+        return newScore;
+      });
+    } catch (error) {
+      logger.error(`[Trust] Manual adjustment failed:`, error);
+      throw error;
     }
   }
 }

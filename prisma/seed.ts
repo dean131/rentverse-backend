@@ -73,13 +73,19 @@ async function seedReferences() {
 async function seedPermissions() {
   console.log("[Seed] Seeding Permissions..."); // [UPDATED]
   const permissions = [
-    { action: "trust.score.update", description: "Update trust scores manually" },
+    {
+      action: "trust.score.update",
+      description: "Update trust scores manually",
+    },
     { action: "property.create", description: "Create new properties" },
     { action: "property.update", description: "Update existing properties" },
     { action: "property.delete", description: "Delete properties" },
     { action: "user.verify", description: "Verify user KYC" },
     { action: "system.config", description: "Manage system configurations" },
-    { action: "finance.payout.approve", description: "Approve withdrawal requests" },
+    {
+      action: "finance.payout.approve",
+      description: "Approve withdrawal requests",
+    },
   ];
   for (const p of permissions) {
     await prisma.permission.upsert({
@@ -109,7 +115,9 @@ async function seedRolesAndAdmin() {
 
   for (const perm of allPermissions) {
     await prisma.rolePermission.upsert({
-      where: { roleId_permissionId: { roleId: adminRole.id, permissionId: perm.id } },
+      where: {
+        roleId_permissionId: { roleId: adminRole.id, permissionId: perm.id },
+      },
       update: {},
       create: { roleId: adminRole.id, permissionId: perm.id },
     });
@@ -119,7 +127,12 @@ async function seedRolesAndAdmin() {
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@rentverse.com" },
     update: { password: hashedPassword, isVerified: true },
-    create: { email: "admin@rentverse.com", password: hashedPassword, name: "Super Admin", isVerified: true },
+    create: {
+      email: "admin@rentverse.com",
+      password: hashedPassword,
+      name: "Super Admin",
+      isVerified: true,
+    },
   });
 
   await prisma.userRole.upsert({
@@ -132,14 +145,24 @@ async function seedRolesAndAdmin() {
 async function seedDemoUsers() {
   console.log("[Seed] Seeding Demo Users..."); // [UPDATED]
   const commonPassword = await bcrypt.hash("password123", 10);
-  const tenantRole = await prisma.role.findUniqueOrThrow({ where: { name: "TENANT" } });
-  const landlordRole = await prisma.role.findUniqueOrThrow({ where: { name: "LANDLORD" } });
+  const tenantRole = await prisma.role.findUniqueOrThrow({
+    where: { name: "TENANT" },
+  });
+  const landlordRole = await prisma.role.findUniqueOrThrow({
+    where: { name: "LANDLORD" },
+  });
 
   // 1. Tenant
   const tenant = await prisma.user.upsert({
     where: { email: "tenant@rentverse.com" },
     update: { password: commonPassword, isVerified: true },
-    create: { email: "tenant@rentverse.com", password: commonPassword, name: "Demo Tenant", phone: "081200000001", isVerified: true },
+    create: {
+      email: "tenant@rentverse.com",
+      password: commonPassword,
+      name: "Demo Tenant",
+      phone: "081200000001",
+      isVerified: true,
+    },
   });
   await prisma.userRole.upsert({
     where: { userId_roleId: { userId: tenant.id, roleId: tenantRole.id } },
@@ -149,19 +172,30 @@ async function seedDemoUsers() {
   await prisma.tenantTrustProfile.upsert({
     where: { userRefId: tenant.id },
     update: { kyc_status: "VERIFIED", tti_score: 85.0 },
-    create: { userRefId: tenant.id, kyc_status: "VERIFIED", tti_score: 85.0, ktpUrl: "rentverse-private/kyc/demo-tenant-ktp.jpg" },
+    create: {
+      userRefId: tenant.id,
+      kyc_status: "VERIFIED",
+      tti_score: 85.0,
+      ktpUrl: "rentverse-private/kyc/demo-tenant-ktp.jpg",
+    },
   });
   await prisma.wallet.upsert({
     where: { userId: tenant.id },
     update: {},
-    create: { userId: tenant.id, balance: 0, currency: "IDR" }
+    create: { userId: tenant.id, balance: 0, currency: "IDR" },
   });
 
   // 2. Landlord
   const landlord = await prisma.user.upsert({
     where: { email: "landlord@rentverse.com" },
     update: { password: commonPassword, isVerified: true },
-    create: { email: "landlord@rentverse.com", password: commonPassword, name: "Demo Landlord", phone: "081200000002", isVerified: true },
+    create: {
+      email: "landlord@rentverse.com",
+      password: commonPassword,
+      name: "Demo Landlord",
+      phone: "081200000002",
+      isVerified: true,
+    },
   });
   await prisma.userRole.upsert({
     where: { userId_roleId: { userId: landlord.id, roleId: landlordRole.id } },
@@ -171,26 +205,47 @@ async function seedDemoUsers() {
   await prisma.landlordTrustProfile.upsert({
     where: { userRefId: landlord.id },
     update: { kyc_status: "VERIFIED", lrs_score: 90.0 },
-    create: { userRefId: landlord.id, kyc_status: "VERIFIED", lrs_score: 90.0, ktpUrl: "rentverse-private/kyc/demo-landlord-ktp.jpg" },
+    create: {
+      userRefId: landlord.id,
+      kyc_status: "VERIFIED",
+      lrs_score: 90.0,
+      ktpUrl: "rentverse-private/kyc/demo-landlord-ktp.jpg",
+    },
   });
   await prisma.wallet.upsert({
     where: { userId: landlord.id },
     update: {},
-    create: { userId: landlord.id, balance: 0, currency: "IDR" }
+    create: { userId: landlord.id, balance: 0, currency: "IDR" },
   });
 }
 
 async function seedDemoProperties() {
   console.log("[Seed] Seeding Demo Properties..."); // [UPDATED]
-  const landlord = await prisma.user.findUniqueOrThrow({ where: { email: "landlord@rentverse.com" } });
-  
-  const villaType = await prisma.propertyType.findUniqueOrThrow({ where: { slug: "villa" } });
-  const roomType = await prisma.propertyType.findUniqueOrThrow({ where: { slug: "room" } });
-  const rentType = await prisma.listingType.findUniqueOrThrow({ where: { slug: "rent" } });
-  const monthly = await prisma.billingPeriod.findUniqueOrThrow({ where: { slug: "monthly" } });
-  const yearly = await prisma.billingPeriod.findUniqueOrThrow({ where: { slug: "yearly" } });
-  const bedroomAttr = await prisma.propertyAttributeType.findUniqueOrThrow({ where: { slug: "bedroom" } });
-  const wifiAttr = await prisma.propertyAttributeType.findUniqueOrThrow({ where: { slug: "electricity" } });
+  const landlord = await prisma.user.findUniqueOrThrow({
+    where: { email: "landlord@rentverse.com" },
+  });
+
+  const villaType = await prisma.propertyType.findUniqueOrThrow({
+    where: { slug: "villa" },
+  });
+  const roomType = await prisma.propertyType.findUniqueOrThrow({
+    where: { slug: "room" },
+  });
+  const rentType = await prisma.listingType.findUniqueOrThrow({
+    where: { slug: "rent" },
+  });
+  const monthly = await prisma.billingPeriod.findUniqueOrThrow({
+    where: { slug: "monthly" },
+  });
+  const yearly = await prisma.billingPeriod.findUniqueOrThrow({
+    where: { slug: "yearly" },
+  });
+  const bedroomAttr = await prisma.propertyAttributeType.findUniqueOrThrow({
+    where: { slug: "bedroom" },
+  });
+  const wifiAttr = await prisma.propertyAttributeType.findUniqueOrThrow({
+    where: { slug: "electricity" },
+  });
 
   // 1. Verified Property
   await prisma.property.create({
@@ -203,16 +258,31 @@ async function seedDemoProperties() {
       country: "Indonesia",
       latitude: -8.409518,
       longitude: 115.188919,
-      price: 25000000, 
-      currency: "IDR", 
+      price: 25000000,
+      currency: "IDR",
       isVerified: true,
       propertyTypeId: villaType.id,
       listingTypeId: rentType.id,
       amenities: ["POOL", "WIFI", "AC", "GARDEN"],
-      allowedBillingPeriods: { create: [{ billingPeriodId: monthly.id }, { billingPeriodId: yearly.id }] },
-      attributes: { create: [{ attributeTypeId: bedroomAttr.id, value: "3" }, { attributeTypeId: wifiAttr.id, value: "5500" }] },
-      images: { create: [{ url: "rentverse-public/seeds/villa-1.jpg", isPrimary: true }, { url: "rentverse-public/seeds/villa-2.jpg", isPrimary: false }] }
-    }
+      allowedBillingPeriods: {
+        create: [
+          { billingPeriodId: monthly.id },
+          { billingPeriodId: yearly.id },
+        ],
+      },
+      attributes: {
+        create: [
+          { attributeTypeId: bedroomAttr.id, value: "3" },
+          { attributeTypeId: wifiAttr.id, value: "5500" },
+        ],
+      },
+      images: {
+        create: [
+          { url: "rentverse-public/seeds/villa-1.jpg", isPrimary: true },
+          { url: "rentverse-public/seeds/villa-2.jpg", isPrimary: false },
+        ],
+      },
+    },
   });
 
   // 2. Unverified Property
@@ -226,31 +296,67 @@ async function seedDemoProperties() {
       country: "Indonesia",
       latitude: -6.292434,
       longitude: 106.799677,
-      price: 2500000, 
-      currency: "IDR", 
-      isVerified: false, 
+      price: 2500000,
+      currency: "IDR",
+      isVerified: false,
       propertyTypeId: roomType.id,
       listingTypeId: rentType.id,
       amenities: ["WIFI", "AC"],
       allowedBillingPeriods: { create: [{ billingPeriodId: monthly.id }] },
       attributes: { create: [{ attributeTypeId: bedroomAttr.id, value: "1" }] },
-      images: { create: [{ url: "rentverse-public/seeds/kost-1.jpg", isPrimary: true }] }
-    }
+      images: {
+        create: [{ url: "rentverse-public/seeds/kost-1.jpg", isPrimary: true }],
+      },
+    },
   });
 }
 
 async function seedTrustEvents() {
   console.log("[Seed] Seeding Trust Scoring Rules..."); // [UPDATED]
   const events = [
-    { code: "PAYMENT_LATE", category: "PAYMENT", role: "TENANT", baseImpact: -5.0, description: "Tenant paid rent after the due date" },
-    { code: "PAYMENT_ON_TIME", category: "PAYMENT", role: "TENANT", baseImpact: 2.0, description: "Tenant paid rent on or before the due date" },
-    { code: "COMM_FAST_RESPONSE", category: "COMMUNICATION", role: "LANDLORD", baseImpact: 3.0, description: "Landlord responds to inquiries within 30 minutes" },
-    { code: "FAKE_LISTING", category: "ACCURACY", role: "LANDLORD", baseImpact: -50.0, description: "Landlord posted a verified fake listing" },
-    // [NEW] KYC Reward
-    { code: "KYC_VERIFIED", category: "COMPLIANCE", role: "TENANT", baseImpact: 10.0, description: "Identity verified by Admin" },
+    {
+      code: "PAYMENT_LATE",
+      category: "PAYMENT",
+      role: "TENANT",
+      baseImpact: -5.0,
+      description: "Tenant paid rent after the due date",
+    },
+    {
+      code: "PAYMENT_ON_TIME",
+      category: "PAYMENT",
+      role: "TENANT",
+      baseImpact: 2.0,
+      description: "Tenant paid rent on or before the due date",
+    },
+    {
+      code: "COMM_FAST_RESPONSE",
+      category: "COMMUNICATION",
+      role: "LANDLORD",
+      baseImpact: 3.0,
+      description: "Landlord responds to inquiries within 30 minutes",
+    },
+    {
+      code: "FAKE_LISTING",
+      category: "ACCURACY",
+      role: "LANDLORD",
+      baseImpact: -50.0,
+      description: "Landlord posted a verified fake listing",
+    },
+    //  KYC Reward
+    {
+      code: "KYC_VERIFIED",
+      category: "COMPLIANCE",
+      role: "TENANT",
+      baseImpact: 10.0,
+      description: "Identity verified by Admin",
+    },
   ];
   for (const e of events) {
-    await prisma.trustEvent.upsert({ where: { code: e.code }, update: { description: e.description }, create: e });
+    await prisma.trustEvent.upsert({
+      where: { code: e.code },
+      update: { description: e.description },
+      create: e,
+    });
   }
 }
 

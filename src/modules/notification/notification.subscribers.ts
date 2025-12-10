@@ -4,7 +4,7 @@ import prisma from "../../config/prisma.js";
 import logger from "../../config/logger.js";
 
 export const registerNotificationSubscribers = () => {
-  logger.info("[Notification] Subscribers Registered");
+  logger.info("[Notification] Notification Subscribers Registered");
 
   // ---------------------------------------------------------
   // 1. WELCOME NOTIFICATION
@@ -27,32 +27,40 @@ export const registerNotificationSubscribers = () => {
   });
 
   // ---------------------------------------------------------
-  // 2. CHAT MESSAGE NOTIFICATION
+  // 2. CHAT MESSAGE NOTIFICATION (Completed)
   // ---------------------------------------------------------
   eventBus.subscribe("CHAT:MESSAGE_SENT", async (payload: any) => {
     try {
+      // 1. Find the Room to identify the receiver
       const room = await prisma.chatRoom.findUnique({
         where: { id: payload.roomId },
         select: { tenantId: true, landlordId: true },
       });
 
-      if (!room) return;
+      if (!room) {
+        logger.warn(
+          `[Notification] Chat room ${payload.roomId} not found. Skipping push.`
+        );
+        return;
+      }
 
+      // Determine Receiver: If sender is Tenant, receiver is Landlord (and vice versa)
       const receiverId =
         payload.senderId === room.tenantId ? room.landlordId : room.tenantId;
 
+      // 2. Get Sender Name for the notification title
       const sender = await prisma.user.findUnique({
         where: { id: payload.senderId },
         select: { name: true },
       });
       const senderName = sender?.name || "Someone";
 
+      // 3. Send Notification
       await notificationService.sendToUser(
         receiverId,
-        `New message from ${senderName}`, // Title
-        payload.content, // Body
+        `New message from ${senderName}`,
+        payload.content,
         {
-          // Data (Optional 4th arg)
           type: "CHAT_MESSAGE",
           roomId: payload.roomId,
           senderId: payload.senderId,
@@ -67,7 +75,7 @@ export const registerNotificationSubscribers = () => {
   });
 
   // ---------------------------------------------------------
-  // 3. BOOKING CREATED
+  // 3. BOOKING CREATED (Notify Landlord)
   // ---------------------------------------------------------
   eventBus.subscribe("BOOKING:CREATED", async (payload: any) => {
     try {
@@ -89,8 +97,10 @@ export const registerNotificationSubscribers = () => {
     }
   });
 
-  // Booking Confirmed -> Notify Tenant
-  eventBus.subscribe("BOOKING:CONFIRMED", async (payload) => {
+  // ---------------------------------------------------------
+  // 4. BOOKING CONFIRMED (Notify Tenant)
+  // ---------------------------------------------------------
+  eventBus.subscribe("BOOKING:CONFIRMED", async (payload: any) => {
     try {
       await notificationService.sendToUser(
         payload.tenantId,
@@ -114,8 +124,10 @@ export const registerNotificationSubscribers = () => {
     }
   });
 
-  // Booking Rejected -> Notify Tenant
-  eventBus.subscribe("BOOKING:REJECTED", async (payload) => {
+  // ---------------------------------------------------------
+  // 5. BOOKING REJECTED (Notify Tenant)
+  // ---------------------------------------------------------
+  eventBus.subscribe("BOOKING:REJECTED", async (payload: any) => {
     try {
       await notificationService.sendToUser(
         payload.tenantId,

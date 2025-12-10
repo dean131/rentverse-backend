@@ -2,6 +2,9 @@ import { Prisma } from "@prisma/client";
 import prisma from "../../config/prisma.js";
 
 class AdminRepository {
+  /**
+   * Fetch paginated users with filters.
+   */
   async findAllUsers(
     skip: number,
     take: number,
@@ -15,12 +18,12 @@ class AdminRepository {
       deletedAt: null,
     };
 
-    // 1. Filter by Role
+    // Filter by Role
     if (filters.role && filters.role !== "ALL") {
       where.roles = { some: { role: { name: filters.role } } };
     }
 
-    // 2. Search
+    // Search (Name, Email, Phone)
     if (filters.search) {
       where.OR = [
         { name: { contains: filters.search, mode: "insensitive" } },
@@ -29,7 +32,7 @@ class AdminRepository {
       ];
     }
 
-    // 3. Filter by KYC Status
+    // Filter by KYC Status
     if (filters.kycStatus) {
       if (filters.role === "TENANT") {
         where.tenantProfile = { kyc_status: filters.kycStatus };
@@ -43,16 +46,14 @@ class AdminRepository {
       }
     }
 
-    // 4. Transaction
+    // Execute Transaction
     const [total, users] = await prisma.$transaction([
-      // [CRITICAL] count() accepts ONLY 'where'. Do NOT put 'take' here.
-      prisma.user.count({ where }),
-
-      // findMany() accepts 'take', 'skip', 'where'
+      prisma.user.count({ where }), // Count ALL
       prisma.user.findMany({
+        // Fetch Page
         where,
         skip,
-        take, // Ensure this is a number (Fixed in Controller)
+        take,
         orderBy: { createdAt: "desc" },
         include: {
           roles: { include: { role: true } },
@@ -66,22 +67,22 @@ class AdminRepository {
   }
 
   /**
-   * Find User with detailed Trust Profiles
+   * Find User Details (with Profiles and Wallet)
    */
   async findUserById(userId: string) {
     return await prisma.user.findUnique({
       where: { id: userId },
       include: {
         roles: { include: { role: true } },
-        tenantProfile: true, // Contains ktpUrl, selfieUrl
-        landlordProfile: true, // Contains ktpUrl
+        tenantProfile: true,
+        landlordProfile: true,
         wallet: true,
       },
     });
   }
 
   /**
-   * Update the Trust Profile status (Tenant or Landlord)
+   * Update the specific Trust Profile status (Tenant or Landlord)
    */
   async updateUserKycStatus(userId: string, role: string, status: string) {
     if (role === "TENANT") {
@@ -104,8 +105,7 @@ class AdminRepository {
   }
 
   /**
-   *  Update the main User verified flag
-   * Keeps AdminModule independent of AuthModule
+   * Update the main User verified flag
    */
   async setUserVerified(userId: string, isVerified: boolean) {
     return await prisma.user.update({

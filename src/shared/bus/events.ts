@@ -81,6 +81,15 @@ export interface EventMap {
     adminId: string;
     reason: string;
   };
+
+  //  Governance Events
+  "ADMIN:TRUST_SCORE_ADJUSTED": {
+    adminId: string;
+    userId: string;
+    role: "TENANT" | "LANDLORD";
+    scoreDelta: number;
+    reason: string;
+  };
 }
 
 export type EventKey = keyof EventMap;

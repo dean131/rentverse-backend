@@ -1,9 +1,9 @@
 import adminRepository from "./admin.repository.js";
-import { ListUsersQuery, VerifyUserInput } from "./admin.schema.js";
+import storageService from "../../shared/services/storage.service.js"; 
+import { ListUsersQuery, VerifyUserInput, AdjustTrustInput } from "./admin.schema.js";
 import { env } from "../../config/env.js";
-import storageService from "shared/services/storage.service.js";
-import AppError from "shared/utils/AppError.js";
-import eventBus from "shared/bus/event-bus.js";
+import AppError from "../../shared/utils/AppError.js";
+import eventBus from "../../shared/bus/event-bus.js";
 
 class AdminService {
   private transformUrl(url: string | null | undefined) {
@@ -11,6 +11,9 @@ class AdminService {
     return url.startsWith("http") ? url : `${env.MINIO_URL}/${url}`;
   }
 
+  /**
+   * 1. Get List of Users
+   */
   async getAllUsers(query: ListUsersQuery) {
     const page = query.page;
     const limit = query.limit;
@@ -23,10 +26,11 @@ class AdminService {
     });
 
     const data = users.map((user) => {
+      // Determine Primary Role Context for Table Display
+      const roles = user.roles.map((r) => r.role.name);
       let score = 0;
       let kycStatus = "N/A";
 
-      // Priority: Check Tenant first, then Landlord
       if (user.tenantProfile) {
         score = user.tenantProfile.tti_score;
         kycStatus = user.tenantProfile.kyc_status;
@@ -41,7 +45,7 @@ class AdminService {
         email: user.email,
         phone: user.phone,
         avatarUrl: this.transformUrl(user.avatarUrl),
-        roles: user.roles,
+        roles: roles,
         trustScore: score,
         kycStatus: kycStatus,
         joinedAt: user.createdAt,
@@ -60,48 +64,39 @@ class AdminService {
   }
 
   /**
-   *  Get User Details + Decrypt KYC Images
+   * 2. Get User Details (Secure)
    */
   async getUserDetails(userId: string) {
     const user = await adminRepository.findUserById(userId);
     if (!user) throw new AppError("User not found", 404);
 
-    // 1. Determine Roles
     const roles = user.roles.map((r) => r.role.name);
-
-    // 2. Prepare KYC Data (Securely Generate Signed URLs)
     let kycData: any = null;
 
-    // A. Check Tenant Profile
+    // A. Tenant Context
     if (user.tenantProfile) {
       kycData = {
         role: "TENANT",
         status: user.tenantProfile.kyc_status,
         score: user.tenantProfile.tti_score,
-        // Generate Signed URLs for Private Buckets
-        ktpUrl: user.tenantProfile.ktpUrl
-          ? await storageService.getPresignedUrl(user.tenantProfile.ktpUrl)
+        ktpUrl: user.tenantProfile.ktpUrl 
+          ? await storageService.getPresignedUrl(user.tenantProfile.ktpUrl) 
           : null,
-        selfieUrl: user.tenantProfile.selfieUrl
-          ? await storageService.getPresignedUrl(user.tenantProfile.selfieUrl)
+        selfieUrl: user.tenantProfile.selfieUrl 
+          ? await storageService.getPresignedUrl(user.tenantProfile.selfieUrl) 
           : null,
       };
-    }
-    // B. Check Landlord Profile (If not tenant, or if they have both, prioritize primary context)
-    // Note: If a user is BOTH, you might want to return an array or object with both.
-    // For simplicity, we'll override if they are a Landlord (or you can merge).
-    if (user.landlordProfile) {
-      const landlordKyc = {
+    } 
+    // B. Landlord Context
+    else if (user.landlordProfile) {
+      kycData = {
         role: "LANDLORD",
         status: user.landlordProfile.kyc_status,
         score: user.landlordProfile.lrs_score,
-        ktpUrl: user.landlordProfile.ktpUrl
-          ? await storageService.getPresignedUrl(user.landlordProfile.ktpUrl)
+        ktpUrl: user.landlordProfile.ktpUrl 
+          ? await storageService.getPresignedUrl(user.landlordProfile.ktpUrl) 
           : null,
       };
-      // If they are both, maybe return both? For now, let's attach Landlord data.
-      if (kycData) kycData.landlordContext = landlordKyc;
-      else kycData = landlordKyc;
     }
 
     return {
@@ -111,57 +106,66 @@ class AdminService {
       phone: user.phone,
       avatarUrl: this.transformUrl(user.avatarUrl),
       isVerified: user.isVerified,
-      roles,
+      roles: roles,
       createdAt: user.createdAt,
-
-      // Financial Info
-      wallet: user.wallet
-        ? {
-            balance: Number(user.wallet.balance),
-            currency: user.wallet.currency,
-          }
-        : null,
-
-      // Verification Data (with Signed URLs)
-      kyc: kycData,
+      wallet: user.wallet ? {
+        balance: Number(user.wallet.balance),
+        currency: user.wallet.currency
+      } : null,
+      kyc: kycData
     };
   }
 
+  /**
+   * 3. Verify User (Approve/Reject)
+   */
   async verifyUser(adminId: string, userId: string, input: VerifyUserInput) {
-    // 1. Get User Context (Local Repo)
     const user = await adminRepository.findUserById(userId);
     if (!user) throw new AppError("User not found", 404);
 
-    const role = user.roles[0].role.name;
+    const role = user.roles[0].role.name; // Simplified: Primary role
 
-    // 2. Update Status in DB
+    // Update DB
     await adminRepository.updateUserKycStatus(userId, role, input.status);
 
-    // 3. Handle Logic based on Decision
+    // Side Effects
     if (input.status === "VERIFIED") {
-      // A. Update Main User Flag
       await adminRepository.setUserVerified(userId, true);
-
-      // B. Publish Event (Trust Module will pick this up)
-      eventBus.publish("KYC:VERIFIED", {
-        userId,
-        role,
-        adminId,
-      });
+      eventBus.publish("KYC:VERIFIED", { userId, role, adminId });
     } else if (input.status === "REJECTED") {
-      // A. Ensure User is Unverified
       await adminRepository.setUserVerified(userId, false);
-
-      // B. Publish Event (Notification Module will pick this up)
-      eventBus.publish("KYC:REJECTED", {
-        userId,
-        role,
-        adminId,
-        reason: input.rejectionReason || "Documents rejected",
+      eventBus.publish("KYC:REJECTED", { 
+        userId, 
+        role, 
+        adminId, 
+        reason: input.rejectionReason || "Rejected by Admin" 
       });
     }
 
     return { message: `User KYC has been ${input.status.toLowerCase()}` };
+  }
+
+  /**
+   * 4. Adjust Trust Score (Governance)
+   */
+  async adjustTrustScore(adminId: string, input: AdjustTrustInput) {
+    // Check existence using local repo
+    const user = await adminRepository.findUserById(input.userId);
+    if (!user) throw new AppError("User not found", 404);
+
+    // Fire Event (Logic handled by TrustModule)
+    eventBus.publish("ADMIN:TRUST_SCORE_ADJUSTED", {
+      adminId,
+      userId: input.userId,
+      role: input.role,
+      scoreDelta: input.scoreDelta,
+      reason: input.reason,
+    });
+
+    return { 
+      message: "Trust adjustment request submitted successfully.",
+      details: { userId: input.userId, delta: input.scoreDelta }
+    };
   }
 }
 
