@@ -1,5 +1,5 @@
 // =========================================================
-// RENTVERSE DATABASE SCHEMA (v5.5 - FINAL REVERTED)
+// RENTVERSE DATABASE SCHEMA (v5.6 - DISPUTE MODULE ADDED)
 // =========================================================
 
 generator client {
@@ -39,6 +39,9 @@ model User {
   bookings        Booking[]
   properties      Property[]            @relation("LandlordProperties")
   wallet          Wallet?
+
+  // [NEW] Relation to Disputes
+  disputesInitiated Dispute[]           @relation("DisputeInitiator")
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -180,7 +183,7 @@ model Property {
   listingType   ListingType @relation(fields: [listingTypeId], references: [id])
   
   price         Decimal     @db.Decimal(15, 2)
-  currency      String      @default("IDR") // [REVERTED] Just a string
+  currency      String      @default("IDR")
   isVerified    Boolean     @default(false)
 
   metadata Json?
@@ -252,7 +255,9 @@ model Booking {
   nextPaymentDate DateTime
   status          String 
 
-  invoices Invoice[]
+  invoices   Invoice[]
+  
+  disputes   Dispute[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -268,7 +273,7 @@ model Invoice {
   booking         Booking   @relation(fields: [bookingId], references: [id])
   
   amount          Decimal   @db.Decimal(15, 2)
-  currency        String    @default("IDR") // [REVERTED] Just a string
+  currency        String    @default("IDR")
 
   dueDate         DateTime
   paidAt          DateTime?
@@ -396,7 +401,7 @@ model Wallet {
   user      User     @relation(fields: [userId], references: [id])
   
   balance   Decimal  @default(0) @db.Decimal(15, 2)
-  currency  String   @default("IDR") // [REVERTED] Just a string
+  currency  String   @default("IDR")
   
   transactions WalletTransaction[]
   payouts      PayoutRequest[]
@@ -435,4 +440,35 @@ model PayoutRequest {
   updatedAt   DateTime @updatedAt
 
   @@map("payout_requests")
+}
+
+// =========================================================
+// 7. MODULE: DISPUTE RESOLUTION
+// =========================================================
+
+model Dispute {
+  id          String   @id @default(uuid())
+  
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+
+  initiatorId String
+  initiator   User     @relation("DisputeInitiator", fields: [initiatorId], references: [id])
+
+  reason      String   // e.g., "Property damage", "Not as described"
+  description String?  @db.Text
+  
+  status      String   @default("OPEN") // OPEN, RESOLVED, REJECTED
+  
+  // Outcome (For Admin use)
+  resolution  String?  // REFUND_TENANT, PAYOUT_LANDLORD, SPLIT
+  adminNotes  String?  @db.Text
+  
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("disputes")
 }
