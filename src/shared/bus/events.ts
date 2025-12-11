@@ -100,6 +100,19 @@ export interface EventMap {
     role: "TENANT" | "LANDLORD"; // Role of the REVIEWER
     rating: number;
   };
+  
+  "PROPERTY:VERIFIED": {
+    propertyId: string;
+    landlordId: string;
+    title: string;
+  };
+
+  "PROPERTY:REJECTED": {
+    propertyId: string;
+    landlordId: string;
+    title: string;
+    reason: string;
+  };
 }
 
 export type EventKey = keyof EventMap;

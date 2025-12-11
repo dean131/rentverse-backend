@@ -39,6 +39,21 @@ export const adjustTrustSchema = z.object({
   reason: z.string().min(5, "Reason is required (min 5 chars)"),
 });
 
+// [NEW] Property Verification
+export const verifyPropertySchema = z.object({
+  isVerified: z.boolean(),
+  rejectionReason: z.string().optional(),
+}).refine((data) => {
+  if (data.isVerified === false && !data.rejectionReason) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Rejection reason is required when rejecting a property",
+  path: ["rejectionReason"],
+});
+
+export type VerifyPropertyInput = z.infer<typeof verifyPropertySchema>;
 export type ListUsersQuery = z.infer<typeof listUsersSchema>;
 export type VerifyUserInput = z.infer<typeof verifyUserSchema>;
 export type AdjustTrustInput = z.infer<typeof adjustTrustSchema>;

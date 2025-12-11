@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import adminService from "./admin.service.js";
 import catchAsync from "../../shared/utils/catchAsync.js";
-import { sendSuccess, sendPaginated } from "../../shared/utils/response.helper.js";
+import {
+  sendSuccess,
+  sendPaginated,
+} from "../../shared/utils/response.helper.js";
 import { ListUsersQuery } from "./admin.schema.js";
 
 class AdminController {
-  
   // GET /admin/users
   getUsers = catchAsync(async (req: Request, res: Response) => {
     // Explicit conversion for safety
@@ -16,7 +18,7 @@ class AdminController {
     };
 
     const { data, meta } = await adminService.getAllUsers(query);
-    
+
     return sendPaginated(
       res,
       data,
@@ -45,6 +47,19 @@ class AdminController {
   adjustTrust = catchAsync(async (req: Request, res: Response) => {
     const result = await adminService.adjustTrustScore(req.user!.id, req.body);
     return sendSuccess(res, result, "Trust adjustment request submitted");
+  });
+
+  /**
+   * [NEW] POST /admin/properties/:id/verify
+   */
+  verifyProperty = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await adminService.verifyProperty(
+      req.user!.id,
+      id,
+      req.body
+    );
+    return sendSuccess(res, result, "Property verification processed");
   });
 }
 

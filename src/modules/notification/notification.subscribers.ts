@@ -145,4 +145,24 @@ export const registerNotificationSubscribers = () => {
       logger.error("[Notification] Failed to send booking rejection:", error);
     }
   });
+
+  // 6. [NEW] Property Approved
+  eventBus.subscribe("PROPERTY:VERIFIED", async (payload: any) => {
+    await notificationService.sendToUser(
+      payload.landlordId,
+      "Property Live! 🏠",
+      `Your listing "${payload.title}" has been approved and is now visible to tenants.`,
+      { type: "PROPERTY", propertyId: payload.propertyId }
+    );
+  });
+
+  // 7. [NEW] Property Rejected
+  eventBus.subscribe("PROPERTY:REJECTED", async (payload: any) => {
+    await notificationService.sendToUser(
+      payload.landlordId,
+      "Listing Rejected 🛑",
+      `Your listing "${payload.title}" was rejected. Reason: ${payload.reason}`,
+      { type: "PROPERTY", propertyId: payload.propertyId }
+    );
+  });
 };

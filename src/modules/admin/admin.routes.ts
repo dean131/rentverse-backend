@@ -2,10 +2,11 @@ import { Router } from "express";
 import adminController from "./admin.controller.js";
 import { verifyToken, requireRole } from "../../middleware/auth.middleware.js";
 import validate from "../../middleware/validate.middleware.js";
-import { 
-  listUsersSchema, 
-  verifyUserSchema, 
-  adjustTrustSchema 
+import {
+  listUsersSchema,
+  verifyUserSchema,
+  adjustTrustSchema,
+  verifyPropertySchema,
 } from "./admin.schema.js";
 
 const router = Router();
@@ -34,6 +35,13 @@ router.post(
   "/trust/adjust",
   validate(adjustTrustSchema),
   adminController.adjustTrust
+);
+
+// [NEW] Property Governance
+router.post(
+  "/properties/:id/verify",
+  validate(verifyPropertySchema),
+  adminController.verifyProperty
 );
 
 export default router;

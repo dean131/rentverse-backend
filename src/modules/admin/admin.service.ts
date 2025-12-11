@@ -1,12 +1,16 @@
 import adminRepository from "./admin.repository.js";
-import storageService from "../../shared/services/storage.service.js"; 
-import { ListUsersQuery, VerifyUserInput, AdjustTrustInput } from "./admin.schema.js";
+import storageService from "../../shared/services/storage.service.js";
+import {
+  ListUsersQuery,
+  VerifyUserInput,
+  AdjustTrustInput,
+  VerifyPropertyInput,
+} from "./admin.schema.js";
 import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 
 class AdminService {
-
   /**
    * 1. Get List of Users
    */
@@ -75,22 +79,22 @@ class AdminService {
         role: "TENANT",
         status: user.tenantProfile.kyc_status,
         score: user.tenantProfile.tti_score,
-        ktpUrl: user.tenantProfile.ktpUrl 
-          ? await storageService.getPresignedUrl(user.tenantProfile.ktpUrl) 
+        ktpUrl: user.tenantProfile.ktpUrl
+          ? await storageService.getPresignedUrl(user.tenantProfile.ktpUrl)
           : null,
-        selfieUrl: user.tenantProfile.selfieUrl 
-          ? await storageService.getPresignedUrl(user.tenantProfile.selfieUrl) 
+        selfieUrl: user.tenantProfile.selfieUrl
+          ? await storageService.getPresignedUrl(user.tenantProfile.selfieUrl)
           : null,
       };
-    } 
+    }
     // B. Landlord Context
     else if (user.landlordProfile) {
       kycData = {
         role: "LANDLORD",
         status: user.landlordProfile.kyc_status,
         score: user.landlordProfile.lrs_score,
-        ktpUrl: user.landlordProfile.ktpUrl 
-          ? await storageService.getPresignedUrl(user.landlordProfile.ktpUrl) 
+        ktpUrl: user.landlordProfile.ktpUrl
+          ? await storageService.getPresignedUrl(user.landlordProfile.ktpUrl)
           : null,
       };
     }
@@ -104,11 +108,13 @@ class AdminService {
       isVerified: user.isVerified,
       roles: roles,
       createdAt: user.createdAt,
-      wallet: user.wallet ? {
-        balance: Number(user.wallet.balance),
-        currency: user.wallet.currency
-      } : null,
-      kyc: kycData
+      wallet: user.wallet
+        ? {
+            balance: Number(user.wallet.balance),
+            currency: user.wallet.currency,
+          }
+        : null,
+      kyc: kycData,
     };
   }
 
@@ -130,11 +136,11 @@ class AdminService {
       eventBus.publish("KYC:VERIFIED", { userId, role, adminId });
     } else if (input.status === "REJECTED") {
       await adminRepository.setUserVerified(userId, false);
-      eventBus.publish("KYC:REJECTED", { 
-        userId, 
-        role, 
-        adminId, 
-        reason: input.rejectionReason || "Rejected by Admin" 
+      eventBus.publish("KYC:REJECTED", {
+        userId,
+        role,
+        adminId,
+        reason: input.rejectionReason || "Rejected by Admin",
       });
     }
 
@@ -158,10 +164,47 @@ class AdminService {
       reason: input.reason,
     });
 
-    return { 
+    return {
       message: "Trust adjustment request submitted successfully.",
-      details: { userId: input.userId, delta: input.scoreDelta }
+      details: { userId: input.userId, delta: input.scoreDelta },
     };
+  }
+
+  /**
+   * [NEW] Verify Property Listing
+   */
+  async verifyProperty(
+    adminId: string,
+    propertyId: string,
+    input: VerifyPropertyInput
+  ) {
+    const property = await adminRepository.findPropertyById(propertyId);
+    if (!property) throw new AppError("Property not found", 404);
+
+    // 1. Update Database
+    await adminRepository.updatePropertyVerification(
+      propertyId,
+      input.isVerified
+    );
+
+    // 2. Publish Events
+    if (input.isVerified) {
+      eventBus.publish("PROPERTY:VERIFIED", {
+        propertyId,
+        landlordId: property.landlordId,
+        title: property.title,
+      });
+    } else {
+      eventBus.publish("PROPERTY:REJECTED", {
+        propertyId,
+        landlordId: property.landlordId,
+        title: property.title,
+        reason: input.rejectionReason || "Admin rejected this listing",
+      });
+    }
+
+    const action = input.isVerified ? "approved" : "rejected";
+    return { message: `Property has been ${action}` };
   }
 }
 
