@@ -12,9 +12,9 @@ services:
       - SMTP_USER=none
       - SMTP_PASS=none
       - SMTP_SECURE=false
-    # ports:
-    #   - "3000:3000"
-    #   - "5555:5555"
+    ports:
+      - "3000:3000"
+      - "5555:5555"
     volumes:
       - ./src:/usr/src/app/src
       - ./prisma:/usr/src/app/prisma
