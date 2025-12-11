@@ -40,8 +40,10 @@ model User {
   properties      Property[]            @relation("LandlordProperties")
   wallet          Wallet?
 
-  // [NEW] Relation to Disputes
+  // Relation to Disputes
   disputesInitiated Dispute[]           @relation("DisputeInitiator")
+
+  reviewsGiven      Review[]            @relation("ReviewsGiven")
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -259,6 +261,8 @@ model Booking {
   
   disputes   Dispute[]
 
+  reviews    Review[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -471,4 +475,23 @@ model Dispute {
   updatedAt   DateTime @updatedAt
 
   @@map("disputes")
+}
+
+// =========================================================
+// 8. MODULE: REVIEWS & RATINGS
+// =========================================================
+
+model Review {
+  id         String   @id @default(uuid())
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  reviewerId String
+  reviewer   User     @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  role       String
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@unique([bookingId, reviewerId])
+  @@map("reviews")
 }

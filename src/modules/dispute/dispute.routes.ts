@@ -19,7 +19,7 @@ router.post(
   disputeController.create
 );
 
-// 2. [NEW] Get My Disputes
+// 2. Get My Disputes
 router.get("/disputes", disputeController.getMine);
 
 // =======================

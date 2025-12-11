@@ -5,12 +5,15 @@ export const createDisputeSchema = z.object({
   description: z.string().optional(),
 });
 
-// [NEW] Schema for resolving a dispute
+// Schema for resolving a dispute
 export const resolveDisputeSchema = z.object({
   resolution: z.enum(["REFUND_TENANT", "PAYOUT_LANDLORD", "REJECT_DISPUTE"], {
-    message: "Invalid resolution type. Must be REFUND_TENANT, PAYOUT_LANDLORD, or REJECT_DISPUTE.",
+    message:
+      "Invalid resolution type. Must be REFUND_TENANT, PAYOUT_LANDLORD, or REJECT_DISPUTE.",
   }),
-  adminNotes: z.string().min(5, "Admin notes are required to explain the decision."),
+  adminNotes: z
+    .string()
+    .min(5, "Admin notes are required to explain the decision."),
 });
 
 export type CreateDisputeInput = z.infer<typeof createDisputeSchema>;

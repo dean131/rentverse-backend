@@ -15,14 +15,14 @@ class DisputeController {
     return sendSuccess(res, dispute, "Dispute submitted successfully");
   });
 
-  // [NEW] Admin List
+  // Admin List
   getAll = catchAsync(async (req: Request, res: Response) => {
     const { status } = req.query;
     const disputes = await disputeService.getAllDisputes(status as string);
     return sendSuccess(res, disputes, "Disputes retrieved successfully");
   });
 
-  // [NEW] Admin Resolve
+  // Admin Resolve
   resolve = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const result = await disputeService.resolveDispute(
@@ -34,7 +34,7 @@ class DisputeController {
   });
 
   /**
-   * [NEW] Get My Disputes
+   * Get My Disputes
    */
   getMine = catchAsync(async (req: Request, res: Response) => {
     const disputes = await disputeService.getMyDisputes(req.user!.id);

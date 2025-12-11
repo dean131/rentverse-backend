@@ -37,14 +37,19 @@ class StorageService {
           };
           await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
         }
-        logger.info(`[Storage] Bucket '${bucketName}' ready (Public: ${isPublic})`);
+        logger.info(
+          `[Storage] Bucket '${bucketName}' ready (Public: ${isPublic})`
+        );
       }
     } catch (error) {
       logger.error(`[Storage] Failed to init bucket ${bucketName}:`, error);
     }
   }
 
-  async uploadFile(file: Express.Multer.File, folder = "public"): Promise<string> {
+  async uploadFile(
+    file: Express.Multer.File,
+    folder = "public"
+  ): Promise<string> {
     const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
     await minioClient.putObject(
       this.publicBucket,
@@ -56,7 +61,10 @@ class StorageService {
     return `${this.publicBucket}/${filename}`;
   }
 
-  async uploadPrivate(file: Express.Multer.File, folder = "kyc"): Promise<string> {
+  async uploadPrivate(
+    file: Express.Multer.File,
+    folder = "kyc"
+  ): Promise<string> {
     const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
     await minioClient.putObject(
       this.privateBucket,
@@ -69,23 +77,23 @@ class StorageService {
   }
 
   /**
-   * [NEW] Generate Public URL
+   * Generate Public URL
    * Central logic to switch between Public Domain (Prod) and Localhost (Dev).
    */
   getPublicUrl(path: string | null | undefined): string | null {
     if (!path) return null;
-    
+
     // If it's already a full URL (e.g. Google avatar), return as is
     if (path.startsWith("http")) return path;
 
     // 1. Determine Host: Prioritize STORAGE_PUBLIC_HOST
     // Remove trailing slash if present to avoid double slashes
     const host = (env.STORAGE_PUBLIC_HOST || env.MINIO_URL).replace(/\/$/, "");
-    
+
     // 2. Clean Path: Remove leading slash
     const cleanPath = path.replace(/^\//, "");
 
-    return `${host}/${cleanPath}`; 
+    return `${host}/${cleanPath}`;
   }
 
   /**
@@ -94,7 +102,7 @@ class StorageService {
   async getPresignedUrl(filePath: string): Promise<string> {
     const [bucket, ...rest] = filePath.split("/");
     const objectName = rest.join("/");
-    // Note: Signed URLs usually default to the internal endpoint. 
+    // Note: Signed URLs usually default to the internal endpoint.
     // If you need public signed URLs, you might need to override the client endpoint here.
     return await minioClient.presignedGetObject(bucket, objectName, 3600);
   }

@@ -90,6 +90,16 @@ export interface EventMap {
     scoreDelta: number;
     reason: string;
   };
+
+  // [NEW] Review Events
+  "REVIEW:CREATED": {
+    reviewId: string;
+    bookingId: string;
+    reviewerId: string; // Who wrote it
+    receiverId: string; // Who received it (Target)
+    role: "TENANT" | "LANDLORD"; // Role of the REVIEWER
+    rating: number;
+  };
 }
 
 export type EventKey = keyof EventMap;

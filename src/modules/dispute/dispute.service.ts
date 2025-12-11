@@ -4,7 +4,11 @@ import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 
 class DisputeService {
-  async createDispute(userId: string, bookingId: string, input: CreateDisputeInput) {
+  async createDispute(
+    userId: string,
+    bookingId: string,
+    input: CreateDisputeInput
+  ) {
     const booking = await disputeRepository.findBookingById(bookingId);
     if (!booking) throw new AppError("Booking not found", 404);
 
@@ -23,16 +27,20 @@ class DisputeService {
   }
 
   /**
-   * [NEW] Get All Disputes
+   * Get All Disputes
    */
   async getAllDisputes(status?: string) {
     return await disputeRepository.findAll({ status });
   }
 
   /**
-   * [NEW] Resolve Dispute
+   * Resolve Dispute
    */
-  async resolveDispute(adminId: string, disputeId: string, input: ResolveDisputeInput) {
+  async resolveDispute(
+    adminId: string,
+    disputeId: string,
+    input: ResolveDisputeInput
+  ) {
     // 1. Fetch Dispute to check existence & context
     const dispute = await disputeRepository.findById(disputeId);
     if (!dispute) throw new AppError("Dispute not found", 404);
@@ -42,7 +50,8 @@ class DisputeService {
     }
 
     // 2. Map Resolution to Status
-    const status = input.resolution === "REJECT_DISPUTE" ? "REJECTED" : "RESOLVED";
+    const status =
+      input.resolution === "REJECT_DISPUTE" ? "REJECTED" : "RESOLVED";
 
     // 3. Update DB
     const updatedDispute = await disputeRepository.resolve(disputeId, adminId, {
@@ -59,10 +68,10 @@ class DisputeService {
         userId: dispute.booking.property.landlordId,
         role: "LANDLORD",
         scoreDelta: -20, // Strict penalty for losing dispute
-        reason: `Dispute #${dispute.id} Resolved against Landlord: ${input.adminNotes}`
+        reason: `Dispute #${dispute.id} Resolved against Landlord: ${input.adminNotes}`,
       });
       // Future: eventBus.publish("FINANCE:REFUND", { ... })
-    } 
+    }
     // "PAYOUT_LANDLORD" => Tenant lost (Penalty)
     else if (input.resolution === "PAYOUT_LANDLORD") {
       eventBus.publish("ADMIN:TRUST_SCORE_ADJUSTED", {
@@ -70,7 +79,7 @@ class DisputeService {
         userId: dispute.booking.tenantId,
         role: "TENANT",
         scoreDelta: -15, // "DISPUTE_LOST"
-        reason: `Dispute #${dispute.id} Resolved against Tenant: ${input.adminNotes}`
+        reason: `Dispute #${dispute.id} Resolved against Tenant: ${input.adminNotes}`,
       });
     }
 
@@ -78,7 +87,7 @@ class DisputeService {
   }
 
   /**
-   * [NEW] Get My Disputes (Tenant/Landlord)
+   * Get My Disputes (Tenant/Landlord)
    */
   async getMyDisputes(userId: string) {
     return await disputeRepository.findByInitiator(userId);

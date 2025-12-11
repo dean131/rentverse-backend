@@ -27,17 +27,9 @@ router.put(
   authController.updateProfile
 );
 
-// [NEW] OTP Routes
-router.post(
-  "/otp/send",
-  validate(sendOtpSchema),
-  authController.sendOtp
-);
+// OTP Routes
+router.post("/otp/send", validate(sendOtpSchema), authController.sendOtp);
 
-router.post(
-  "/otp/verify",
-  validate(verifyOtpSchema),
-  authController.verifyOtp
-);
+router.post("/otp/verify", validate(verifyOtpSchema), authController.verifyOtp);
 
 export default router;

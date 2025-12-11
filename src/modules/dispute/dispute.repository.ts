@@ -24,27 +24,27 @@ class DisputeRepository {
   }
 
   /**
-   * [NEW] Find all disputes for Admin List
+   * Find all disputes for Admin List
    */
   async findAll(filters: { status?: string }) {
     return await prisma.dispute.findMany({
       where: filters.status ? { status: filters.status } : undefined,
       include: {
         booking: {
-          select: { 
-            id: true, 
+          select: {
+            id: true,
             status: true,
-            property: { select: { title: true } } 
-          }
+            property: { select: { title: true } },
+          },
         },
-        initiator: { select: { name: true, email: true } }
+        initiator: { select: { name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
     });
   }
 
   /**
-   * [NEW] Find single dispute with full context (needed for resolution logic)
+   * Find single dispute with full context (needed for resolution logic)
    */
   async findById(disputeId: string) {
     return await prisma.dispute.findUnique({
@@ -52,21 +52,25 @@ class DisputeRepository {
       include: {
         booking: {
           include: {
-            property: { select: { landlordId: true } }
-          }
-        }
-      }
+            property: { select: { landlordId: true } },
+          },
+        },
+      },
     });
   }
 
   /**
-   * [NEW] Resolve Dispute
+   * Resolve Dispute
    */
-  async resolve(disputeId: string, adminId: string, data: { 
-    status: string; 
-    resolution: string; 
-    adminNotes: string 
-  }) {
+  async resolve(
+    disputeId: string,
+    adminId: string,
+    data: {
+      status: string;
+      resolution: string;
+      adminNotes: string;
+    }
+  ) {
     return await prisma.dispute.update({
       where: { id: disputeId },
       data: {
@@ -80,21 +84,21 @@ class DisputeRepository {
   }
 
   /**
-   * [NEW] Find disputes initiated by a specific user
+   * Find disputes initiated by a specific user
    */
   async findByInitiator(userId: string) {
     return await prisma.dispute.findMany({
       where: { initiatorId: userId },
       include: {
         booking: {
-          select: { 
-            id: true, 
+          select: {
+            id: true,
             status: true,
             startDate: true,
             endDate: true,
-            property: { select: { title: true, city: true } } 
-          }
-        }
+            property: { select: { title: true, city: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });

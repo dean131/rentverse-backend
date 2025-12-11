@@ -39,7 +39,7 @@ class AuthController {
   });
 
   /**
-   * [NEW] POST /auth/otp/send
+   * POST /auth/otp/send
    */
   sendOtp = catchAsync(async (req: Request, res: Response) => {
     const result = await authService.sendVerificationOtp(req.body);
@@ -47,7 +47,7 @@ class AuthController {
   });
 
   /**
-   * [NEW] POST /auth/otp/verify
+   * POST /auth/otp/verify
    */
   verifyOtp = catchAsync(async (req: Request, res: Response) => {
     const result = await authService.verifyUserOtp(req.body);
