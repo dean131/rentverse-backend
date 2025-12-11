@@ -26,7 +26,15 @@ const app: Application = express();
  * =====================================================================
  */
 app.use(helmet());
-app.use(cors());
+// CORS Configuration
+app.use(
+  cors({
+    origin: env.CORS_ORIGIN,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "10kb" }));
 
 /**
@@ -59,7 +67,7 @@ app.get("/", (req: Request, res: Response) => {
     status: "success",
     message: "Rentverse Backend (Node 24 + TS) is Online",
     timestamp: new Date().toISOString(),
-    documentation: "/api-docs",
+    // documentation: "/api-docs",
   });
 });
 
