@@ -94,6 +94,74 @@ class WalletService {
       return payout;
     });
   }
+
+  /**
+   * [NEW] Admin: Get Payout List
+   */
+  async getAdminPayouts(query: any) {
+    const limit = Number(query.limit) || 10;
+    const cursor = query.cursor as string | undefined;
+    const status = query.status as string | undefined;
+
+    const { total, requests } = await financeRepository.findAllPayouts(limit, cursor, status);
+
+    let nextCursor: string | null = null;
+    if (requests.length === limit) {
+      nextCursor = requests[requests.length - 1].id;
+    }
+
+    return {
+      data: requests,
+      meta: { total, limit, nextCursor, hasMore: !!nextCursor }
+    };
+  }
+
+  /**
+   * [NEW] Admin: Process Payout (Approve/Reject)
+   */
+  async processPayout(adminId: string, payoutId: string, action: "APPROVE" | "REJECT", notes?: string) {
+    const payout = await financeRepository.findPayoutById(payoutId);
+    if (!payout) throw new AppError("Payout request not found", 404);
+
+    if (payout.status !== "PENDING") {
+      throw new AppError("Payout request is already processed", 400);
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      if (action === "APPROVE") {
+        // 1. Mark as COMPLETED
+        // In real world, trigger bank transfer here.
+        await financeRepository.updatePayoutStatus(payoutId, "COMPLETED", new Date(), notes);
+        
+        logger.info(`[Finance] Payout ${payoutId} APPROVED by Admin ${adminId}`);
+        return { message: "Payout approved. Funds transferred." };
+
+      } else {
+        // 1. REJECT: Refund the money back to Wallet
+        await financeRepository.updatePayoutStatus(payoutId, "REJECTED", new Date(), notes);
+
+        // 2. Lock Wallet & Update Balance
+        const wallet = await financeRepository.getWalletForUpdate(tx, payout.wallet.userId);
+        const newBalance = Number(wallet.balance) + Number(payout.amount); // Refund
+
+        await financeRepository.updateBalance(tx, wallet.id, newBalance);
+
+        // 3. Create Refund Transaction Log
+        await financeRepository.createTransaction(tx, {
+          walletId: wallet.id,
+          amount: Number(payout.amount),
+          type: "CREDIT",
+          category: "REFUND",
+          description: `Refund for Payout #${payout.id.substring(0, 8)}`,
+          referenceId: payout.id,
+          balanceAfter: newBalance
+        });
+
+        logger.info(`[Finance] Payout ${payoutId} REJECTED. Refunded ${payout.amount} to user.`);
+        return { message: "Payout rejected. Funds refunded to wallet." };
+      }
+    });
+  }
 }
 
 export default new WalletService();

@@ -19,7 +19,6 @@ class FinanceRepository {
 
   /**
    * Create wallet AND return empty transactions array
-   * This matches the return type of findWalletByUserId.
    */
   async createWallet(userId: string) {
     return await prisma.wallet.create({
@@ -78,7 +77,6 @@ class FinanceRepository {
 
   /**
    * Lock and Get Wallet by User ID
-   * Needs to be called inside a transaction.
    */
   async getWalletForUpdate(tx: Prisma.TransactionClient, userId: string) {
     return await tx.wallet.findUniqueOrThrow({
@@ -143,6 +141,56 @@ class FinanceRepository {
         ...data,
         status: "PENDING",
       },
+    });
+  }
+
+  /**
+   * [NEW] Admin: List Payout Requests
+   */
+  async findAllPayouts(limit: number, cursor?: string, status?: string) {
+    const where: Prisma.PayoutRequestWhereInput = status ? { status } : {};
+    
+    const cursorObj = cursor ? { id: cursor } : undefined;
+    const skip = cursor ? 1 : 0;
+
+    const [total, requests] = await prisma.$transaction([
+      prisma.payoutRequest.count({ where }),
+      prisma.payoutRequest.findMany({
+        where,
+        take: limit,
+        skip,
+        cursor: cursorObj,
+        orderBy: { createdAt: "desc" },
+        include: {
+          wallet: {
+            select: { 
+              user: { select: { name: true, email: true } } 
+            }
+          }
+        }
+      }),
+    ]);
+
+    return { total, requests };
+  }
+
+  /**
+   * [NEW] Find Payout Request by ID
+   */
+  async findPayoutById(id: string) {
+    return await prisma.payoutRequest.findUnique({
+      where: { id },
+      include: { wallet: true }
+    });
+  }
+
+  /**
+   * [NEW] Update Payout Status
+   */
+  async updatePayoutStatus(id: string, status: string, processedAt: Date, notes?: string) {
+    return await prisma.payoutRequest.update({
+      where: { id },
+      data: { status, processedAt, notes },
     });
   }
 }

@@ -6,16 +6,36 @@ import { verifyToken, requireRole } from "../../middleware/auth.middleware.js";
 
 const router = Router();
 
-// 1. Get Wallet (Tenant OR Landlord)
-router.get("/wallet", verifyToken, financeController.getWallet);
+router.use(verifyToken);
+
+// ==========================
+// USER ROUTES (Tenant/Landlord)
+// ==========================
+// 1. Get Wallet
+router.get("/wallet", financeController.getWallet);
 
 // 2. Request Payout (Landlord Only)
 router.post(
   "/payout",
-  verifyToken,
   requireRole("LANDLORD"),
   validate(payoutRequestSchema),
   financeController.requestPayout
+);
+
+// ==========================
+// ADMIN ROUTES
+// ==========================
+router.get(
+  "/admin/payouts",
+  requireRole("ADMIN"),
+  financeController.getAllPayouts
+);
+
+router.post(
+  "/admin/payouts/:id/process",
+  requireRole("ADMIN"),
+  // Optional: Add a Zod schema here for body { action, notes } if you want strict validation
+  financeController.processPayout
 );
 
 export default router;
