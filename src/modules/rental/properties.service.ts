@@ -19,7 +19,7 @@ class PropertiesService {
     // 1. Transform Property Images
     const images = property.images.map((img: any) => ({
       ...img,
-      url: img.url.startsWith("http") ? img.url : `${env.MINIO_URL}/${img.url}`,
+      url: storageService.getPublicUrl(img.url),
     }));
 
     // 2. Transform Landlord Avatar (if present)
@@ -27,9 +27,7 @@ class PropertiesService {
     if (landlord && landlord.avatarUrl) {
       landlord = {
         ...landlord,
-        avatarUrl: landlord.avatarUrl.startsWith("http")
-          ? landlord.avatarUrl
-          : `${env.MINIO_URL}/${landlord.avatarUrl}`,
+        avatarUrl: storageService.getPublicUrl(landlord.avatarUrl),
       };
     }
 

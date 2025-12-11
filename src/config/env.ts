@@ -30,10 +30,10 @@ const envSchema = z.object({
     .string()
     .transform((val) => val === "true")
     .default(false),
-
-  // Public URL for Mobile App
-  MINIO_URL: z.string().url(),
-
+  // Public URL for Mobile App (Internal Fallback)
+  MINIO_URL: z.string().url().default("http://localhost:9000"),
+  // External Public Domain (Primary for Prod)
+  STORAGE_PUBLIC_HOST: z.string().optional(),
   // Bucket Details
   MINIO_BUCKET: z.string().default("rentverse-public"),
   MINIO_REGION: z.string().default("us-east-1"),

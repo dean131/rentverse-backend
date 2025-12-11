@@ -1,10 +1,7 @@
 import landlordRepository from "./landlord.repository.js";
-import { env } from "../../config/env.js";
+import storageService from "shared/services/storage.service.js";
 
 class LandlordService {
-  private transformUrl(url: string) {
-    return url.startsWith("http") ? url : `${env.MINIO_URL}/${url}`;
-  }
 
   async getDashboard(landlordId: string) {
     const stats = await landlordRepository.getDashboardStats(landlordId);
@@ -51,7 +48,9 @@ class LandlordService {
     const data = properties.map((p) => {
       let imageUrl = null;
       if (p.images.length > 0) {
-        imageUrl = this.transformUrl(p.images[0].url);
+        const imageUrl = p.images.length > 0 
+        ? storageService.getPublicUrl(p.images[0].url) 
+        : null;
       }
 
       return {

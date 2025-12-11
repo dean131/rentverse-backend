@@ -6,10 +6,6 @@ import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 
 class AdminService {
-  private transformUrl(url: string | null | undefined) {
-    if (!url) return null;
-    return url.startsWith("http") ? url : `${env.MINIO_URL}/${url}`;
-  }
 
   /**
    * 1. Get List of Users
@@ -44,7 +40,7 @@ class AdminService {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        avatarUrl: this.transformUrl(user.avatarUrl),
+        avatarUrl: storageService.getPublicUrl(user.avatarUrl),
         roles: roles,
         trustScore: score,
         kycStatus: kycStatus,
@@ -104,7 +100,7 @@ class AdminService {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      avatarUrl: this.transformUrl(user.avatarUrl),
+      avatarUrl: storageService.getPublicUrl(user.avatarUrl),
       isVerified: user.isVerified,
       roles: roles,
       createdAt: user.createdAt,

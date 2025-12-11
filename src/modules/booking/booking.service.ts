@@ -4,6 +4,7 @@ import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 import { CreateBookingInput } from "./booking.schema.js";
 import { env } from "../../config/env.js";
+import storageService from "shared/services/storage.service.js";
 
 class BookingService {
   /**
@@ -117,13 +118,9 @@ class BookingService {
     // ---------------------------------------------------------
 
     // Resolve Image URL
-    let imageUrl = null;
-    if (property.images.length > 0) {
-      const rawUrl = property.images[0].url;
-      imageUrl = rawUrl.startsWith("http")
-        ? rawUrl
-        : `${env.MINIO_URL}/${rawUrl}`;
-    }
+    const imageUrl = property.images.length > 0
+      ? storageService.getPublicUrl(property.images[0].url)
+      : null;
 
     return {
       bookingId: booking.id,
@@ -181,13 +178,9 @@ class BookingService {
 
     const data = bookings.map((booking) => {
       const property = booking.property;
-      let imageUrl = null;
-      if (property.images.length > 0) {
-        const rawUrl = property.images[0].url;
-        imageUrl = rawUrl.startsWith("http")
-          ? rawUrl
-          : `${env.MINIO_URL}/${rawUrl}`;
-      }
+      const imageUrl = property.images.length > 0 
+        ? storageService.getPublicUrl(property.images[0].url) 
+        : null;
 
       const invoice = booking.invoices[0];
 

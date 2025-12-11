@@ -1,12 +1,9 @@
 import chatRepository from "./chat.repository.js";
 import AppError from "../../shared/utils/AppError.js";
 import { env } from "../../config/env.js";
+import storageService from "shared/services/storage.service.js";
 
 class ChatService {
-  private transformUrl(url: string | null | undefined) {
-    if (!url) return null;
-    return url.startsWith("http") ? url : `${env.MINIO_URL}/${url}`;
-  }
 
   async startChat(tenantId: string, propertyId: string) {
     const property = await chatRepository.findPropertyLink(propertyId);
@@ -65,7 +62,7 @@ class ChatService {
         },
         otherUser: {
           name: otherPerson?.name || "Unknown",
-          avatarUrl: this.transformUrl(otherPerson?.avatarUrl),
+          avatarUrl: storageService.getPublicUrl(otherPerson?.avatarUrl),
         },
         lastMessage: lastMsg ? lastMsg.content : "Start the conversation!",
         lastMessageAt: room.lastMessageAt,
