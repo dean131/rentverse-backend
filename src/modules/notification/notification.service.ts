@@ -2,7 +2,7 @@ import notificationRepository from "./notification.repository.js";
 import { RegisterDeviceInput } from "./notification.schema.js";
 import prisma from "../../config/prisma.js";
 import logger from "../../config/logger.js";
-import { notificationQueue } from "./notification.queue.js"; // [NEW] Import Queue
+import { notificationQueue } from "./notification.queue.js"; // Import Queue
 
 class NotificationService {
   /**

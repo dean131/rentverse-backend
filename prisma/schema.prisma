@@ -189,6 +189,9 @@ model Property {
   currency      String      @default("IDR")
   isVerified    Boolean     @default(false)
 
+  averageRating Float       @default(0)
+  reviewCount   Int         @default(0)
+
   metadata Json?
 
   allowedBillingPeriods PropertyBillingPeriod[]

@@ -1,6 +1,6 @@
 import redis from "../../config/redis.js";
 import crypto from "crypto";
-import { otpQueue } from "./otp.queue.js"; // [NEW] Import Queue
+import { otpQueue } from "./otp.queue.js"; // Import Queue
 
 class OtpService {
   /**

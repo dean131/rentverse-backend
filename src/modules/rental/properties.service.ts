@@ -35,6 +35,11 @@ class PropertiesService {
       ...property,
       images,
       landlord, // Returns the original landlord object with updated avatarUrl
+
+      // Expose the Rating (Defaults to 0 if null/undefined)
+      // This maps the DB field 'averageRating' to the API field 'rating'
+      rating: property.averageRating || 0,
+      reviewCount: property.reviewCount || 0,
     };
   }
 
@@ -128,7 +133,7 @@ class PropertiesService {
   }
 
   /**
-   *  Update Property
+   * Update Property
    */
   async updateProperty(
     landlordId: string,
@@ -152,7 +157,7 @@ class PropertiesService {
   }
 
   /**
-   *  Delete Property
+   * Delete Property
    */
   async deleteProperty(landlordId: string, propertyId: string) {
     // 1. Verify Ownership
