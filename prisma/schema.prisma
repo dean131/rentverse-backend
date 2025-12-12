@@ -32,6 +32,7 @@ model User {
   landlordProfile LandlordTrustProfile?
   favorites       UserFavorite[]
   devices         UserDevice[]
+  notifications   Notification[]
 
   tenantChats     ChatRoom[]            @relation("TenantChats")
   landlordChats   ChatRoom[]            @relation("LandlordChats")
@@ -494,4 +495,21 @@ model Review {
 
   @@unique([bookingId, reviewerId])
   @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title     String
+  body      String
+  type      String   // "BOOKING", "SYSTEM", "CHAT", "PAYMENT"
+  data      Json?    // Stores metadata like { bookingId: "..." }
+  isRead    Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
 }

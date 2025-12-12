@@ -87,7 +87,7 @@ export const registerTrustSubscribers = () => {
     );
   });
 
-  // 6. [NEW] Review Impact
+  // 6. Review Impact
   eventBus.subscribe("REVIEW:CREATED", async (payload: any) => {
     logger.info(`[Trust] Processing Review Rating: ${payload.rating} stars`);
 

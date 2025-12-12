@@ -50,7 +50,7 @@ class AdminController {
   });
 
   /**
-   * [NEW] POST /admin/properties/:id/verify
+   * POST /admin/properties/:id/verify
    */
   verifyProperty = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;

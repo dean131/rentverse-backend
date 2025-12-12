@@ -115,19 +115,19 @@ class AdminRepository {
   }
 
   /**
-   * [NEW] Find Property with Landlord info (for notification)
+   * Find Property with Landlord info (for notification)
    */
   async findPropertyById(id: string) {
     return await prisma.property.findUnique({
       where: { id },
-      include: { 
-        landlord: { select: { id: true, name: true, email: true } } 
-      }
+      include: {
+        landlord: { select: { id: true, name: true, email: true } },
+      },
     });
   }
 
   /**
-   * [NEW] Update Property Verification Status
+   * Update Property Verification Status
    */
   async updatePropertyVerification(id: string, isVerified: boolean) {
     return await prisma.property.update({

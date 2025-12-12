@@ -87,7 +87,11 @@ class FinanceRepository {
   /**
    * Update Wallet Balance
    */
-  async updateBalance(tx: Prisma.TransactionClient, walletId: string, newBalance: number) {
+  async updateBalance(
+    tx: Prisma.TransactionClient,
+    walletId: string,
+    newBalance: number
+  ) {
     return await tx.wallet.update({
       where: { id: walletId },
       data: { balance: newBalance },
@@ -145,11 +149,11 @@ class FinanceRepository {
   }
 
   /**
-   * [NEW] Admin: List Payout Requests
+   * Admin: List Payout Requests
    */
   async findAllPayouts(limit: number, cursor?: string, status?: string) {
     const where: Prisma.PayoutRequestWhereInput = status ? { status } : {};
-    
+
     const cursorObj = cursor ? { id: cursor } : undefined;
     const skip = cursor ? 1 : 0;
 
@@ -163,11 +167,11 @@ class FinanceRepository {
         orderBy: { createdAt: "desc" },
         include: {
           wallet: {
-            select: { 
-              user: { select: { name: true, email: true } } 
-            }
-          }
-        }
+            select: {
+              user: { select: { name: true, email: true } },
+            },
+          },
+        },
       }),
     ]);
 
@@ -175,19 +179,24 @@ class FinanceRepository {
   }
 
   /**
-   * [NEW] Find Payout Request by ID
+   * Find Payout Request by ID
    */
   async findPayoutById(id: string) {
     return await prisma.payoutRequest.findUnique({
       where: { id },
-      include: { wallet: true }
+      include: { wallet: true },
     });
   }
 
   /**
-   * [NEW] Update Payout Status
+   * Update Payout Status
    */
-  async updatePayoutStatus(id: string, status: string, processedAt: Date, notes?: string) {
+  async updatePayoutStatus(
+    id: string,
+    status: string,
+    processedAt: Date,
+    notes?: string
+  ) {
     return await prisma.payoutRequest.update({
       where: { id },
       data: { status, processedAt, notes },

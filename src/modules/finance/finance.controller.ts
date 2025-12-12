@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import walletService from "./wallet.service.js";
 import catchAsync from "../../shared/utils/catchAsync.js";
-import { sendSuccess, sendInfiniteList } from "../../shared/utils/response.helper.js"; // [MODIFIED] Added sendInfiniteList
+import {
+  sendSuccess,
+  sendInfiniteList,
+} from "../../shared/utils/response.helper.js"; // [MODIFIED] Added sendInfiniteList
 
 class FinanceController {
   /**
@@ -21,31 +24,41 @@ class FinanceController {
   requestPayout = catchAsync(async (req: Request, res: Response) => {
     // Service handles atomicity and "Insufficient Balance" errors
     const result = await walletService.requestPayout(req.user!.id, req.body);
-    
+
     return sendSuccess(res, result, "Payout request created successfully", 201);
   });
 
   /**
-   * [NEW] GET /admin/payouts
+   * GET /admin/payouts
    */
   getAllPayouts = catchAsync(async (req: Request, res: Response) => {
     const result = await walletService.getAdminPayouts(req.query);
-    return sendInfiniteList(res, result.data, result.meta, "Payout requests retrieved");
+    return sendInfiniteList(
+      res,
+      result.data,
+      result.meta,
+      "Payout requests retrieved"
+    );
   });
 
   /**
-   * [NEW] POST /admin/payouts/:id/process
+   * POST /admin/payouts/:id/process
    */
   processPayout = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { action, notes } = req.body; // action: "APPROVE" | "REJECT"
-    
+
     // Simple validation (can be moved to Zod schema)
     if (!["APPROVE", "REJECT"].includes(action)) {
-      throw new Error("Invalid action. Must be APPROVE or REJECT"); 
+      throw new Error("Invalid action. Must be APPROVE or REJECT");
     }
 
-    const result = await walletService.processPayout(req.user!.id, id, action, notes);
+    const result = await walletService.processPayout(
+      req.user!.id,
+      id,
+      action,
+      notes
+    );
     return sendSuccess(res, result, "Payout processed successfully");
   });
 }

@@ -146,7 +146,7 @@ export const registerNotificationSubscribers = () => {
     }
   });
 
-  // 6. [NEW] Property Approved
+  // 6. Property Approved
   eventBus.subscribe("PROPERTY:VERIFIED", async (payload: any) => {
     await notificationService.sendToUser(
       payload.landlordId,
@@ -156,7 +156,7 @@ export const registerNotificationSubscribers = () => {
     );
   });
 
-  // 7. [NEW] Property Rejected
+  // 7. Property Rejected
   eventBus.subscribe("PROPERTY:REJECTED", async (payload: any) => {
     await notificationService.sendToUser(
       payload.landlordId,
@@ -164,5 +164,51 @@ export const registerNotificationSubscribers = () => {
       `Your listing "${payload.title}" was rejected. Reason: ${payload.reason}`,
       { type: "PROPERTY", propertyId: payload.propertyId }
     );
+  });
+
+  // ---------------------------------------------------------
+  // 8. KYC APPROVED
+  // ---------------------------------------------------------
+  eventBus.subscribe("KYC:VERIFIED", async (payload: any) => {
+    try {
+      await notificationService.sendToUser(
+        payload.userId,
+        "You're Verified! ✅",
+        "Your identity documents have been approved. You now have full access to Rentverse features.",
+        {
+          type: "KYC_STATUS",
+          status: "VERIFIED",
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+      logger.debug(
+        `[Notification] KYC Verified alert sent to ${payload.userId}`
+      );
+    } catch (error) {
+      logger.error("[Notification] Failed to send KYC Verified alert:", error);
+    }
+  });
+
+  // ---------------------------------------------------------
+  // 9. KYC REJECTED
+  // ---------------------------------------------------------
+  eventBus.subscribe("KYC:REJECTED", async (payload: any) => {
+    try {
+      await notificationService.sendToUser(
+        payload.userId,
+        "KYC Update ⚠️",
+        `Your identity verification was rejected. Reason: ${payload.reason}`,
+        {
+          type: "KYC_STATUS",
+          status: "REJECTED",
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+      logger.debug(
+        `[Notification] KYC Rejected alert sent to ${payload.userId}`
+      );
+    } catch (error) {
+      logger.error("[Notification] Failed to send KYC Rejected alert:", error);
+    }
   });
 };

@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../../config/prisma.js"; 
+import prisma from "../../config/prisma.js";
 import financeRepository from "./finance.repository.js";
 import AppError from "../../shared/utils/AppError.js";
 import logger from "../../config/logger.js";
@@ -21,7 +21,11 @@ class WalletService {
    * Process Rent Split
    * Logic: 5% Platform Fee, Credit Remainder to Landlord
    */
-  async processRentSplit(invoiceId: string, grossAmount: number, landlordId: string) {
+  async processRentSplit(
+    invoiceId: string,
+    grossAmount: number,
+    landlordId: string
+  ) {
     const PLATFORM_FEE_PERCENT = 0.05;
 
     // 1. Business Logic: Calculate Amounts
@@ -96,14 +100,18 @@ class WalletService {
   }
 
   /**
-   * [NEW] Admin: Get Payout List
+   * Admin: Get Payout List
    */
   async getAdminPayouts(query: any) {
     const limit = Number(query.limit) || 10;
     const cursor = query.cursor as string | undefined;
     const status = query.status as string | undefined;
 
-    const { total, requests } = await financeRepository.findAllPayouts(limit, cursor, status);
+    const { total, requests } = await financeRepository.findAllPayouts(
+      limit,
+      cursor,
+      status
+    );
 
     let nextCursor: string | null = null;
     if (requests.length === limit) {
@@ -112,14 +120,19 @@ class WalletService {
 
     return {
       data: requests,
-      meta: { total, limit, nextCursor, hasMore: !!nextCursor }
+      meta: { total, limit, nextCursor, hasMore: !!nextCursor },
     };
   }
 
   /**
-   * [NEW] Admin: Process Payout (Approve/Reject)
+   * Admin: Process Payout (Approve/Reject)
    */
-  async processPayout(adminId: string, payoutId: string, action: "APPROVE" | "REJECT", notes?: string) {
+  async processPayout(
+    adminId: string,
+    payoutId: string,
+    action: "APPROVE" | "REJECT",
+    notes?: string
+  ) {
     const payout = await financeRepository.findPayoutById(payoutId);
     if (!payout) throw new AppError("Payout request not found", 404);
 
@@ -131,17 +144,31 @@ class WalletService {
       if (action === "APPROVE") {
         // 1. Mark as COMPLETED
         // In real world, trigger bank transfer here.
-        await financeRepository.updatePayoutStatus(payoutId, "COMPLETED", new Date(), notes);
-        
-        logger.info(`[Finance] Payout ${payoutId} APPROVED by Admin ${adminId}`);
-        return { message: "Payout approved. Funds transferred." };
+        await financeRepository.updatePayoutStatus(
+          payoutId,
+          "COMPLETED",
+          new Date(),
+          notes
+        );
 
+        logger.info(
+          `[Finance] Payout ${payoutId} APPROVED by Admin ${adminId}`
+        );
+        return { message: "Payout approved. Funds transferred." };
       } else {
         // 1. REJECT: Refund the money back to Wallet
-        await financeRepository.updatePayoutStatus(payoutId, "REJECTED", new Date(), notes);
+        await financeRepository.updatePayoutStatus(
+          payoutId,
+          "REJECTED",
+          new Date(),
+          notes
+        );
 
         // 2. Lock Wallet & Update Balance
-        const wallet = await financeRepository.getWalletForUpdate(tx, payout.wallet.userId);
+        const wallet = await financeRepository.getWalletForUpdate(
+          tx,
+          payout.wallet.userId
+        );
         const newBalance = Number(wallet.balance) + Number(payout.amount); // Refund
 
         await financeRepository.updateBalance(tx, wallet.id, newBalance);
@@ -154,10 +181,12 @@ class WalletService {
           category: "REFUND",
           description: `Refund for Payout #${payout.id.substring(0, 8)}`,
           referenceId: payout.id,
-          balanceAfter: newBalance
+          balanceAfter: newBalance,
         });
 
-        logger.info(`[Finance] Payout ${payoutId} REJECTED. Refunded ${payout.amount} to user.`);
+        logger.info(
+          `[Finance] Payout ${payoutId} REJECTED. Refunded ${payout.amount} to user.`
+        );
         return { message: "Payout rejected. Funds refunded to wallet." };
       }
     });

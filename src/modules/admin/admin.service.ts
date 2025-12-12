@@ -169,7 +169,7 @@ class AdminService {
   }
 
   /**
-   * [NEW] Verify Property Listing
+   * Verify Property Listing
    */
   async verifyProperty(
     adminId: string,

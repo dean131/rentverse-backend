@@ -6,12 +6,16 @@ import { registerDeviceSchema } from "./notification.schema.js";
 
 const router = Router();
 
-// Endpoint: POST /api/v1/notifications/device
+router.use(verifyToken); // Guard all routes
+
 router.post(
   "/device",
-  verifyToken,
   validate(registerDeviceSchema),
   notificationController.registerDevice
 );
+
+// History
+router.get("/", notificationController.list);
+router.patch("/:id/read", notificationController.markRead);
 
 export default router;

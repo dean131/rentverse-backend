@@ -37,7 +37,7 @@ router.post(
   adminController.adjustTrust
 );
 
-// [NEW] Property Governance
+// Property Governance
 router.post(
   "/properties/:id/verify",
   validate(verifyPropertySchema),

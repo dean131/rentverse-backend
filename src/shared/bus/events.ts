@@ -93,7 +93,7 @@ export interface EventMap {
     reason: string;
   };
 
-  // [NEW] Review Events
+  // Review Events
   "REVIEW:CREATED": {
     reviewId: string;
     bookingId: string;
@@ -102,7 +102,7 @@ export interface EventMap {
     role: "TENANT" | "LANDLORD"; // Role of the REVIEWER
     rating: number;
   };
-  
+
   "PROPERTY:VERIFIED": {
     propertyId: string;
     landlordId: string;

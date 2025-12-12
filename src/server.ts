@@ -7,11 +7,11 @@ import redis from "./config/redis.js";
 import socketService from "./shared/services/socket.service.js";
 
 import { registerTrustSubscribers } from "./modules/trust/trust.subscribers.js";
-import { registerNotificationSubscribers } from "./modules/notification/notification.subscribers.js"; 
+import { registerNotificationSubscribers } from "./modules/notification/notification.subscribers.js";
 import { registerFinanceSubscribers } from "./modules/finance/finance.subscribers.js";
-import { registerAuthSubscribers } from "modules/auth/auth.subscribers.js";
+import { registerAuthSubscribers } from "./modules/auth/auth.subscribers.js";
 
-// [NEW] Import the Queue Worker to start listening
+// Import the Queue Worker to start listening
 import "./modules/chat/chat.queue.js";
 
 const startServer = async () => {
