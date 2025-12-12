@@ -3,6 +3,8 @@ import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import redis from "./config/redis.js";
 
 import errorHandler from "./middleware/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -40,20 +42,24 @@ app.use(express.json({ limit: "10kb" }));
 
 /**
  * =====================================================================
- * RATE LIMITER
+ * RATE LIMITER (REDIS BACKED)
  * =====================================================================
  */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 2000, 
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    // @ts-expect-error - Known issue with type mismatch between ioredis and rate-limit-redis
+    sendCommand: (...args: string[]) => redis.call(...args),
+  }),
   message: {
     status: "fail",
-    message:
-      "Too many requests from this IP, please try again after 15 minutes",
+    message: "Too many requests from this IP, please try again after 15 minutes",
   },
 });
+
 app.use("/api", limiter);
 
 /**
@@ -68,7 +74,6 @@ app.get("/", (req: Request, res: Response) => {
     status: "success",
     message: "Rentverse Backend (Node 24 + TS) is Online",
     timestamp: new Date().toISOString(),
-    // documentation: "/api-docs",
   });
 });
 

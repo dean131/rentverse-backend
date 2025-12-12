@@ -1,3 +1,5 @@
+import { ChatMessage } from "@prisma/client";
+
 /**
  * THE EVENT CONTRACT
  * Defines the payload types for every event in the system.
@@ -112,6 +114,14 @@ export interface EventMap {
     landlordId: string;
     title: string;
     reason: string;
+  };
+
+  "CHAT:MESSAGE_PROCESSED": {
+    message: ChatMessage; // Or 'any' if types aren't generated yet
+    roomId: string;
+    senderId: string;
+    receiverId: string;
+    tempId?: string; // For optimistic UI updates on client
   };
 }
 
