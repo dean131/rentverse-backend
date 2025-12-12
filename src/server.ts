@@ -13,6 +13,7 @@ import { registerAuthSubscribers } from "./modules/auth/auth.subscribers.js";
 
 // Import the Queue Worker to start listening
 import "./modules/chat/chat.queue.js";
+import "./modules/notification/notification.queue.js";
 
 const startServer = async () => {
   try {
