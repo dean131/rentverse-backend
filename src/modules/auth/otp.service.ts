@@ -1,12 +1,10 @@
-import redis from "../../config/redis.js"; // Assuming you have a redis client exported
+import redis from "../../config/redis.js";
 import crypto from "crypto";
-import AppError from "../../shared/utils/AppError.js";
-import emailService from "../../shared/services/email.service.js"; // We will build this
-import whatsappService from "../../shared/services/whatsapp.service.js"; // We will build this
+import { otpQueue } from "./otp.queue.js"; // [NEW] Import Queue
 
 class OtpService {
   /**
-   * 1. Generate & Store OTP
+   * 1. Generate & Store OTP (Sync) -> Send (Async)
    */
   async sendOtp(target: string, channel: "EMAIL" | "WHATSAPP") {
     // A. Generate 6-digit numeric code
@@ -14,35 +12,35 @@ class OtpService {
     const key = `OTP:${channel}:${target}`;
 
     // B. Store in Redis (Expires in 5 minutes = 300s)
-    // "EX" sets expiry in seconds
+    // We do this BEFORE queuing to ensure the code is valid even if the worker is fast
     await redis.set(key, otp, "EX", 300);
 
-    // C. Send via Channel
-    if (channel === "EMAIL") {
-      await emailService.sendOtp(target, otp);
-    } else {
-      await whatsappService.sendOtp(target, otp);
-    }
+    // C. [CHANGED] Add to Queue for Delivery
+    await otpQueue.add("sendOtp", {
+      target,
+      channel,
+      otp,
+    });
 
     return { message: `OTP sent to ${target} via ${channel}` };
   }
 
   /**
-   * 2. Verify OTP
+   * 2. Verify OTP (Remains Synchronous)
    */
   async verifyOtp(target: string, channel: "EMAIL" | "WHATSAPP", code: string) {
     const key = `OTP:${channel}:${target}`;
     const storedOtp = await redis.get(key);
 
     if (!storedOtp) {
-      throw new AppError("OTP expired or invalid", 400);
+      return false; // Invalid or Expired
     }
 
     if (storedOtp !== code) {
-      throw new AppError("Invalid OTP code", 400);
+      return false; // Wrong Code
     }
 
-    // Success! Delete the key so it can't be reused
+    // Success! Delete the key so it can't be reused (Replay Attack Protection)
     await redis.del(key);
 
     return true;
