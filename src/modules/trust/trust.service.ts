@@ -3,16 +3,6 @@ import prisma from "../../config/prisma.js";
 import logger from "../../config/logger.js";
 
 class TrustService {
-  /**
-   * Initialize Profile on User Registration
-   */
-  async initializeProfile(userId: string, role: string) {
-    if (role === "TENANT") {
-      return await trustRepository.createTenantProfile(userId);
-    } else {
-      return await trustRepository.createLandlordProfile(userId);
-    }
-  }
 
   /**
    * 1. Automated System Reward

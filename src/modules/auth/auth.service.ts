@@ -160,38 +160,33 @@ class AuthService {
    * Verify OTP & Update User Status
    */
   async verifyUserOtp(input: VerifyOtpInput) {
-    // 1. Verify Logic (Redis)
-    const isValid = await otpService.verifyOtp(input.target, input.channel, input.code);
-    
-    if (!isValid) {
-      throw new AppError("Invalid or expired OTP", 400);
-    }
+    // 1. Verify Code
+    const isValid = await otpService.verifyOtp(
+      input.target,
+      input.channel,
+      input.code
+    );
+    if (!isValid) throw new AppError("Invalid or expired OTP", 400);
 
-    // 2. Find User (Repository Call)
+    // 2. Find User
     const user = await authRepository.findUserByEmailOrPhone(input.target);
+    if (!user) return { message: "Contact verified", isUserUpdated: false };
 
-    if (!user) {
-      // Logic decision: OTP is valid, but no user found in DB.
-      return { message: "OTP verified successfully", isUserUpdated: false };
-    }
+    // 3. Update the specific contact field
+    const updateData: { emailVerifiedAt?: Date; phoneVerifiedAt?: Date } = {};
+    if (input.channel === "EMAIL") updateData.emailVerifiedAt = new Date();
+    else updateData.phoneVerifiedAt = new Date();
 
-    // 3. Prepare Update Data
-    const updateData: { 
-      emailVerifiedAt?: Date; 
-      phoneVerifiedAt?: Date; 
-      isVerified?: boolean 
-    } = { isVerified: true };
-
-    if (input.channel === "EMAIL") {
-      updateData.emailVerifiedAt = new Date();
-    } else {
-      updateData.phoneVerifiedAt = new Date();
-    }
-
-    // 4. Update User (Repository Call)
+    // 4. Perform Update
     await authRepository.updateUserVerification(user.id, updateData);
 
-    return { message: "User verified successfully", isUserUpdated: true };
+    const isNowVerified = await authRepository.refreshUserVerification(user.id);
+
+    return {
+      message: "Contact verified successfully",
+      isUserUpdated: true,
+      isVerified: isNowVerified,
+    };
   }
 }
 

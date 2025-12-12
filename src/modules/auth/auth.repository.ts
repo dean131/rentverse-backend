@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/prisma.js";
+import logger from "config/logger.js";
 
 class AuthRepository {
   async findUserByEmail(email: string) {
@@ -104,6 +105,39 @@ class AuthRepository {
       where: { id: userId },
       data: data,
     });
+  }
+
+  /**
+   * [NEW] Centralized Verification Logic
+   * Checks Email, Phone, and KYC status. If all pass, promotes user to isVerified=true.
+   */
+  async refreshUserVerification(userId: string) {
+    // 1. Fetch User with all necessary relations
+    const user = await this.findUserByIdWithProfiles(userId);
+
+    if (!user) return null;
+
+    // 2. Check Conditions
+    const isEmailDone = !!user.emailVerifiedAt;
+    const isPhoneDone = !!user.phoneVerifiedAt;
+
+    const kycStatus =
+      user.tenantProfile?.kyc_status || user.landlordProfile?.kyc_status;
+    const isKycDone = kycStatus === "VERIFIED";
+
+    const shouldBeVerified = isEmailDone && isPhoneDone && isKycDone;
+
+    // 3. Update if changed
+    if (user.isVerified !== shouldBeVerified) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { isVerified: shouldBeVerified },
+      });
+      // Optional: Log it
+      logger.info(`[Auth] User ${userId} verification status auto-updated to ${shouldBeVerified}`);
+    }
+
+    return shouldBeVerified;
   }
 }
 

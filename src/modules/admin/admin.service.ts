@@ -130,12 +130,10 @@ class AdminService {
     // Update DB
     await adminRepository.updateUserKycStatus(userId, role, input.status);
 
-    // Side Effects
+    // 2. [CHANGED] Emit Event & Let Auth Module Handle Promotion
     if (input.status === "VERIFIED") {
-      await adminRepository.setUserVerified(userId, true);
       eventBus.publish("KYC:VERIFIED", { userId, role, adminId });
     } else if (input.status === "REJECTED") {
-      await adminRepository.setUserVerified(userId, false);
       eventBus.publish("KYC:REJECTED", {
         userId,
         role,
@@ -144,7 +142,7 @@ class AdminService {
       });
     }
 
-    return { message: `User KYC has been ${input.status.toLowerCase()}` };
+    return { message: `User KYC status updated to ${input.status}` };
   }
 
   /**

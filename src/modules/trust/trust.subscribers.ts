@@ -6,11 +6,6 @@ import logger from "../../config/logger.js";
 export const registerTrustSubscribers = () => {
   logger.info("[Trust] Subscribers Registered");
 
-  // 1. Init Profile
-  eventBus.subscribe("AUTH:USER_REGISTERED", async (payload: any) => {
-    await trustService.initializeProfile(payload.userId, payload.role);
-  });
-
   // 2. Payment Reward (Tenant)
   eventBus.subscribe("PAYMENT:PAID", async (payload: any) => {
     await trustService.applySystemReward(
