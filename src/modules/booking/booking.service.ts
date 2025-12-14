@@ -277,6 +277,19 @@ class BookingService {
 
     return updated;
   }
+
+  /**
+   * [NEW] Public Availability Check
+   */
+  async getPropertyAvailability(propertyId: string) {
+    const bookings = await bookingRepository.findFutureBookings(propertyId);
+
+    // Return simple list of blocked ranges
+    return bookings.map(b => ({
+      start: b.startDate,
+      end: b.endDate
+    }));
+  }
 }
 
 export default new BookingService();

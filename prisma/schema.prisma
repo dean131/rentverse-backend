@@ -192,6 +192,8 @@ model Property {
   averageRating Float       @default(0)
   reviewCount   Int         @default(0)
 
+  icalImportUrl String?
+
   metadata Json?
 
   allowedBillingPeriods PropertyBillingPeriod[]
@@ -253,19 +255,21 @@ model Booking {
   tenantId   String
   tenant     User     @relation(fields: [tenantId], references: [id])
 
-  billingPeriodId Int
-  billingPeriod   BillingPeriod @relation(fields: [billingPeriodId], references: [id])
+  billingPeriodId Int?  
+  billingPeriod   BillingPeriod? @relation(fields: [billingPeriodId], references: [id])
 
   startDate       DateTime
   endDate         DateTime?
-  nextPaymentDate DateTime
-  status          String 
 
-  invoices   Invoice[]
+  nextPaymentDate DateTime?
   
+  status          String 
+  invoices   Invoice[]
   disputes   Dispute[]
-
   reviews    Review[]
+
+  source        String      @default("RENTVERSE") 
+  externalId    String?     @unique
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

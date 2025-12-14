@@ -11,6 +11,7 @@ import { registerNotificationSubscribers } from "./modules/notification/notifica
 import { registerFinanceSubscribers } from "./modules/finance/finance.subscribers.js";
 import { registerAuthSubscribers } from "./modules/auth/auth.subscribers.js";
 import { registerPropertySubscribers } from "./modules/rental/properties.subscribers.js";
+import { startCalendarScheduler } from "./modules/calendar/calendar.queue.js";
 
 // Import the Queue Worker to start listening
 import "./modules/chat/chat.queue.js";
@@ -27,6 +28,7 @@ const startServer = async () => {
     registerFinanceSubscribers();
     registerAuthSubscribers();
     registerPropertySubscribers();
+    await startCalendarScheduler();
     
     logger.info("[INFO] Event Subscribers Registered");
 

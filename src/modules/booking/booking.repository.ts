@@ -164,6 +164,25 @@ class BookingRepository {
       },
     });
   }
+
+  /**
+   * [NEW] Find all future active bookings to block dates on the frontend calendar.
+   */
+  async findFutureBookings(propertyId: string) {
+    return await prisma.booking.findMany({
+      where: {
+        propertyId,
+        // We include 'BLOCKED' for iCal/External syncs we discussed earlier
+        status: { in: ["ACTIVE", "PENDING_PAYMENT", "CONFIRMED", "BLOCKED"] }, 
+        endDate: { gte: new Date() }, // Only future/current bookings
+      },
+      select: {
+        startDate: true,
+        endDate: true,
+      },
+      orderBy: { startDate: "asc" },
+    });
+  }
 }
 
 export default new BookingRepository();

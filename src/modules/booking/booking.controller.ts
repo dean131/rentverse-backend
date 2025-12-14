@@ -39,6 +39,15 @@ class BookingController {
     const result = await bookingService.rejectBooking(req.user!.id, id, reason);
     return sendSuccess(res, result, "Booking rejected");
   });
+
+  /**
+   * [NEW] GET /bookings/availability/:propertyId
+   */
+  checkAvailability = catchAsync(async (req: Request, res: Response) => {
+    const { propertyId } = req.params;
+    const result = await bookingService.getPropertyAvailability(propertyId);
+    return sendSuccess(res, result, "Availability retrieved successfully");
+  });
 }
 
 export default new BookingController();

@@ -47,6 +47,7 @@ export const createPropertySchema = z.object({
       value: z.any().transform(String), // Ensure value is stored as string
     })
   )).optional().default([]),
+  icalImportUrl: z.string().url().optional().or(z.literal("")),
 });
 
 // Update Schema
@@ -86,6 +87,7 @@ export const updatePropertySchema = z.object({
     }
     return val;
   }, z.array(z.number().int())).optional(),
+  icalImportUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;

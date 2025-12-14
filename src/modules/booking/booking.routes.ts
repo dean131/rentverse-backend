@@ -6,6 +6,8 @@ import { verifyToken, requireRole } from "../../middleware/auth.middleware.js";
 
 const router = Router();
 
+router.get("/availability/:propertyId", bookingController.checkAvailability);
+
 // Only Tenants can book
 router.post(
   "/",

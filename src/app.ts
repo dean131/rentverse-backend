@@ -20,6 +20,7 @@ import landlordRoutes from "./modules/landlord/landlord.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import disputeRoutes from "./modules/dispute/dispute.routes.js";
 import reviewRoutes from "./modules/review/review.routes.js";
+import calendarRoutes from "./modules/calendar/calendar.routes.js";
 
 const app: Application = express();
 
@@ -91,6 +92,7 @@ app.use("/api/v1/landlord", landlordRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1", disputeRoutes);
 app.use("/api/v1/reviews", reviewRoutes);
+app.use("/api/v1/calendar", calendarRoutes);
 
 // Handle 404 - Not Found
 app.use((req: Request, res: Response) => {
