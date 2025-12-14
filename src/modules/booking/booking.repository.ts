@@ -66,23 +66,23 @@ class BookingRepository {
    * Includes Property details and the latest Invoice status.
    */
   async findAllByUser(
-    userId: string, 
-    role: string, 
-    limit = 10, 
+    userId: string,
+    role: string,
+    limit = 10,
     cursor?: string,
     filters?: { search?: string; status?: string } // Accept filters
   ) {
     // 1. Base Filter (User Role)
     const where: Prisma.BookingWhereInput = {};
 
-    if (role === 'TENANT') {
+    if (role === "TENANT") {
       where.tenantId = userId;
-    } else if (role === 'LANDLORD') {
+    } else if (role === "LANDLORD") {
       where.property = { landlordId: userId };
     }
 
     // 2. Status Filter (e.g., "PENDING_PAYMENT", "ACTIVE")
-    if (filters?.status && filters.status !== 'ALL') {
+    if (filters?.status && filters.status !== "ALL") {
       where.status = filters.status;
     }
 
@@ -90,7 +90,7 @@ class BookingRepository {
     if (filters?.search) {
       where.property = {
         ...(where.property || {}), // Preserve existing relation filter
-        title: { contains: filters.search, mode: 'insensitive' }
+        title: { contains: filters.search, mode: "insensitive" },
       };
     }
 
@@ -105,7 +105,7 @@ class BookingRepository {
         take: limit,
         skip,
         cursor: cursorObj,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           property: {
             select: {
@@ -113,17 +113,21 @@ class BookingRepository {
               title: true,
               address: true,
               city: true,
-              images: { where: { isPrimary: true }, take: 1, select: { url: true } }
-            }
+              images: {
+                where: { isPrimary: true },
+                take: 1,
+                select: { url: true },
+              },
+            },
           },
           invoices: {
             take: 1,
-            orderBy: { createdAt: 'desc' },
-            select: { id: true, status: true, amount: true, currency: true }
+            orderBy: { createdAt: "desc" },
+            select: { id: true, status: true, amount: true, currency: true },
           },
-          tenant: { select: { name: true, avatarUrl: true } }
-        }
-      })
+          tenant: { select: { name: true, avatarUrl: true } },
+        },
+      }),
     ]);
 
     return { total, bookings };
@@ -140,40 +144,36 @@ class BookingRepository {
       },
       include: {
         property: true,
-        tenant: { select: { email: true, name: true, id: true } }
-      }
+        tenant: { select: { email: true, name: true, id: true } },
+      },
     });
   }
 
   /**
    * Update Booking Status
    */
-  async updateStatus(
-    bookingId: string, 
-    status: string, 
-    reason?: string
-  ) {
+  async updateStatus(bookingId: string, status: string, reason?: string) {
     // If rejected, we might want to store the reason in metadata or a separate field.
     // For now, we'll assume metadata usage or just status update.
     return await prisma.booking.update({
       where: { id: bookingId },
-      data: { 
+      data: {
         status,
         // Optional: Save rejection reason in metadata if schema supports it
-        // metadata: reason ? { rejectionReason: reason } : undefined 
+        // metadata: reason ? { rejectionReason: reason } : undefined
       },
     });
   }
 
   /**
-   * [NEW] Find all future active bookings to block dates on the frontend calendar.
+   * Find all future active bookings to block dates on the frontend calendar.
    */
   async findFutureBookings(propertyId: string) {
     return await prisma.booking.findMany({
       where: {
         propertyId,
         // We include 'BLOCKED' for iCal/External syncs we discussed earlier
-        status: { in: ["ACTIVE", "PENDING_PAYMENT", "CONFIRMED", "BLOCKED"] }, 
+        status: { in: ["ACTIVE", "PENDING_PAYMENT", "CONFIRMED", "BLOCKED"] },
         endDate: { gte: new Date() }, // Only future/current bookings
       },
       select: {

@@ -139,8 +139,7 @@ class PropertiesRepository {
   }
 
   /**
-   *  Update Property
-   * Handles complex relation updates (Attributes, BillingPeriods).
+   * Update Property
    */
   async update(id: string, data: UpdatePropertyInput) {
     return await prisma.$transaction(async (tx) => {
@@ -151,14 +150,18 @@ class PropertiesRepository {
         price: data.price,
         address: data.address,
         city: data.city,
-        amenities: data.amenities, // Replaces the whole array
+        amenities: data.amenities,
+
+        // Add this line to actually save the URL to the DB
+        icalImportUrl: data.icalImportUrl,
+
         updatedAt: new Date(),
       };
 
       // 2. Handle Billing Periods (Replace Strategy)
       if (data.billingPeriodIds) {
         updateData.allowedBillingPeriods = {
-          deleteMany: {}, // Clear old
+          deleteMany: {},
           create: data.billingPeriodIds.map((bpId) => ({
             billingPeriodId: bpId,
           })),
@@ -168,7 +171,7 @@ class PropertiesRepository {
       // 3. Handle EAV Attributes (Replace Strategy)
       if (data.attributes) {
         updateData.attributes = {
-          deleteMany: {}, // Clear old specs
+          deleteMany: {},
           create: data.attributes.map((attr) => ({
             attributeTypeId: attr.attributeTypeId,
             value: attr.value,

@@ -89,27 +89,40 @@ export const registerTrustSubscribers = () => {
 
   // 6. Review Impact
   eventBus.subscribe("REVIEW:CREATED", async (payload: any) => {
-    
-    // [FIX] Objectivity Check
-    // If a TENANT wrote the review, it is a PROPERTY review. 
+    // Objectivity Check
+    // If a TENANT wrote the review, it is a PROPERTY review.
     // We DO NOT update the Landlord's LRS here.
     if (payload.role === "TENANT") {
-      logger.info(`[Trust] Review ${payload.reviewId} is for a Property. Skipping LRS update.`);
+      logger.info(
+        `[Trust] Review ${payload.reviewId} is for a Property. Skipping LRS update.`
+      );
       return;
     }
 
     // If a LANDLORD wrote the review, it is a BEHAVIOR review.
     // We CONTINUE to update the Tenant's TTI.
-    logger.info(`[Trust] Processing Tenant Behavior Rating: ${payload.rating} stars`);
+    logger.info(
+      `[Trust] Processing Tenant Behavior Rating: ${payload.rating} stars`
+    );
 
     let impact = 0;
     // ... (Calculate impact based on stars: 5=+3, 1=-5, etc.) ...
     switch (payload.rating) {
-      case 5: impact = 3.0; break;
-      case 4: impact = 1.0; break;
-      case 3: impact = 0.0; break;
-      case 2: impact = -3.0; break;
-      case 1: impact = -5.0; break;
+      case 5:
+        impact = 3.0;
+        break;
+      case 4:
+        impact = 1.0;
+        break;
+      case 3:
+        impact = 0.0;
+        break;
+      case 2:
+        impact = -3.0;
+        break;
+      case 1:
+        impact = -5.0;
+        break;
     }
 
     await trustService.applyManualAdjustment(

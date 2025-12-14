@@ -34,8 +34,8 @@ class CalendarService {
         start: b.startDate,
         end: b.endDate,
         summary: "Rentverse Booking", // Privacy: Don't show tenant name
-        // [FIX] Use 'id' instead of 'uid' to satisfy TypeScript
-        id: b.id, 
+        // Use 'id' instead of 'uid' to satisfy TypeScript
+        id: b.id,
       });
     });
 

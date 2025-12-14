@@ -41,7 +41,7 @@ class BookingController {
   });
 
   /**
-   * [NEW] GET /bookings/availability/:propertyId
+   * GET /bookings/availability/:propertyId
    */
   checkAvailability = catchAsync(async (req: Request, res: Response) => {
     const { propertyId } = req.params;

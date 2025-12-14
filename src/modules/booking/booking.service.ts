@@ -118,9 +118,10 @@ class BookingService {
     // ---------------------------------------------------------
 
     // Resolve Image URL
-    const imageUrl = property.images.length > 0
-      ? storageService.getPublicUrl(property.images[0].url)
-      : null;
+    const imageUrl =
+      property.images.length > 0
+        ? storageService.getPublicUrl(property.images[0].url)
+        : null;
 
     return {
       bookingId: booking.id,
@@ -178,9 +179,10 @@ class BookingService {
 
     const data = bookings.map((booking) => {
       const property = booking.property;
-      const imageUrl = property.images.length > 0 
-        ? storageService.getPublicUrl(property.images[0].url) 
-        : null;
+      const imageUrl =
+        property.images.length > 0
+          ? storageService.getPublicUrl(property.images[0].url)
+          : null;
 
       const invoice = booking.invoices[0];
 
@@ -279,15 +281,15 @@ class BookingService {
   }
 
   /**
-   * [NEW] Public Availability Check
+   * Public Availability Check
    */
   async getPropertyAvailability(propertyId: string) {
     const bookings = await bookingRepository.findFutureBookings(propertyId);
 
     // Return simple list of blocked ranges
-    return bookings.map(b => ({
+    return bookings.map((b) => ({
       start: b.startDate,
-      end: b.endDate
+      end: b.endDate,
     }));
   }
 }
