@@ -211,4 +211,24 @@ export const registerNotificationSubscribers = () => {
       logger.error("[Notification] Failed to send KYC Rejected alert:", error);
     }
   });
+
+  // 10. RECURRING INVOICE GENERATED
+  eventBus.subscribe("INVOICE:CREATED", async (payload: any) => {
+    try {
+      await notificationService.sendToUser(
+        payload.tenantId,
+        "Rent Due! 💸",
+        `A new invoice for ${payload.amount} is ready. Please pay by ${new Date(
+          payload.dueDate
+        ).toLocaleDateString()}.`,
+        {
+          type: "INVOICE_PAYMENT",
+          invoiceId: payload.invoiceId,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        }
+      );
+    } catch (error) {
+      logger.error("[Notification] Failed to send invoice alert:", error);
+    }
+  });
 };

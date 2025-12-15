@@ -123,6 +123,14 @@ export interface EventMap {
     receiverId: string;
     tempId?: string; // For optimistic UI updates on client
   };
+
+  "INVOICE:CREATED": {
+    bookingId: string;
+    invoiceId: string;
+    tenantId: string;
+    amount: number;
+    dueDate: Date;
+  };
 }
 
 export type EventKey = keyof EventMap;

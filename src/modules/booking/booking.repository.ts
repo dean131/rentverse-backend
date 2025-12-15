@@ -183,6 +183,61 @@ class BookingRepository {
       orderBy: { startDate: "asc" },
     });
   }
+
+  /**
+   * Find active bookings that need a new invoice generated.
+   * Condition: Status is ACTIVE/CONFIRMED, and nextPaymentDate is today or in the past.
+   */
+  async findDueBookings() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return await prisma.booking.findMany({
+      where: {
+        status: { in: ["ACTIVE", "CONFIRMED"] },
+        nextPaymentDate: { lte: today },
+        billingPeriodId: { not: null }, // Only recurring bookings
+      },
+      include: {
+        billingPeriod: true,
+        property: { select: { price: true, title: true, landlordId: true } },
+        tenant: { select: { id: true, email: true, name: true } },
+      },
+    });
+  }
+
+  /**
+   * Process Recurring Billing Transaction
+   * 1. Create new Invoice
+   * 2. Update Booking's nextPaymentDate
+   */
+  async processRecurringInvoice(
+    bookingId: string,
+    nextDate: Date,
+    amount: number
+  ) {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Create Invoice
+      const invoice = await tx.invoice.create({
+        data: {
+          bookingId,
+          amount: new Prisma.Decimal(amount),
+          dueDate: new Date(), // Due immediately upon generation
+          status: "PENDING",
+        },
+      });
+
+      // 2. Update Booking
+      await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          nextPaymentDate: nextDate,
+        },
+      });
+
+      return invoice;
+    });
+  }
 }
 
 export default new BookingRepository();

@@ -3,8 +3,8 @@ import prisma from "../../config/prisma.js";
 import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 import { CreateBookingInput } from "./booking.schema.js";
-import { env } from "../../config/env.js";
 import storageService from "shared/services/storage.service.js";
+import logger from "../../config/logger.js";
 
 class BookingService {
   /**
@@ -291,6 +291,71 @@ class BookingService {
       start: b.startDate,
       end: b.endDate,
     }));
+  }
+
+  /**
+   * Cron Job Logic: Generate Recurring Invoices
+   */
+  async generateRecurringInvoices() {
+    logger.info("[Billing] Starting recurring invoice check...");
+
+    // 1. Fetch Due Bookings
+    const dueBookings = await bookingRepository.findDueBookings();
+    logger.info(
+      `[Billing] Found ${dueBookings.length} bookings due for payment.`
+    );
+
+    const results = { success: 0, failed: 0 };
+
+    // 2. Process Each
+    for (const booking of dueBookings) {
+      try {
+        if (!booking.billingPeriod) continue;
+
+        // Calculate next period
+        // Example: Monthly (1 month) -> Add 1 month to current nextPaymentDate
+        const currentDueDate = new Date(booking.nextPaymentDate!);
+        const nextDueDate = new Date(currentDueDate);
+        nextDueDate.setMonth(
+          nextDueDate.getMonth() + booking.billingPeriod.durationMonths
+        );
+
+        // Calculate Amount (Base Price * Duration)
+        // Note: For advanced cases, you might want to re-fetch property price or use a locked price.
+        // Here we use current property price.
+        const amount =
+          Number(booking.property.price) * booking.billingPeriod.durationMonths;
+
+        // Execute Transaction
+        const invoice = await bookingRepository.processRecurringInvoice(
+          booking.id,
+          nextDueDate,
+          amount
+        );
+
+        // Send Notification (Fire & Forget)
+        eventBus.publish("INVOICE:CREATED", {
+          bookingId: booking.id,
+          invoiceId: invoice.id,
+          tenantId: booking.tenantId,
+          amount: amount,
+          dueDate: invoice.dueDate,
+        });
+
+        logger.info(
+          `[Billing] Generated Invoice ${invoice.id} for Booking ${booking.id}`
+        );
+        results.success++;
+      } catch (error) {
+        logger.error(
+          `[Billing] Failed to process booking ${booking.id}:`,
+          error
+        );
+        results.failed++;
+      }
+    }
+
+    return results;
   }
 }
 

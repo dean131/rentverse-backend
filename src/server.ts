@@ -12,6 +12,7 @@ import { registerFinanceSubscribers } from "./modules/finance/finance.subscriber
 import { registerAuthSubscribers } from "./modules/auth/auth.subscribers.js";
 import { registerPropertySubscribers } from "./modules/rental/properties.subscribers.js";
 import { startCalendarScheduler } from "./modules/calendar/calendar.queue.js";
+import { startBillingScheduler } from "./modules/billing/billing.worker.js";
 
 // Import the Queue Worker to start listening
 import "./modules/chat/chat.queue.js";
@@ -29,6 +30,7 @@ const startServer = async () => {
     registerAuthSubscribers();
     registerPropertySubscribers();
     await startCalendarScheduler();
+    startBillingScheduler();
     
     logger.info("[INFO] Event Subscribers Registered");
 
