@@ -1,5 +1,5 @@
 import landlordRepository from "./landlord.repository.js";
-import storageService from "shared/services/storage.service.js";
+import storageService from "../../shared/services/storage.service.js";
 
 class LandlordService {
 

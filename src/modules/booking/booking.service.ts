@@ -3,7 +3,7 @@ import prisma from "../../config/prisma.js";
 import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 import { CreateBookingInput } from "./booking.schema.js";
-import storageService from "shared/services/storage.service.js";
+import storageService from "../../shared/services/storage.service.js";
 import logger from "../../config/logger.js";
 
 class BookingService {

@@ -1,7 +1,7 @@
 import chatRepository from "./chat.repository.js";
 import AppError from "../../shared/utils/AppError.js";
 import { env } from "../../config/env.js";
-import storageService from "shared/services/storage.service.js";
+import storageService from "../../shared/services/storage.service.js";
 
 class ChatService {
 
