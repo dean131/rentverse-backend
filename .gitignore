@@ -6,3 +6,4 @@ logs
 src/shared/prisma-client
 firebase-service-account.json
 TODO.md
+GEMINI.md

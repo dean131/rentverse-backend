@@ -74,11 +74,12 @@ class BookingRepository {
   ) {
     // 1. Base Filter (User Role)
     const where: Prisma.BookingWhereInput = {};
+    const propertyWhere: Prisma.PropertyWhereInput = {};
 
     if (role === "TENANT") {
       where.tenantId = userId;
     } else if (role === "LANDLORD") {
-      where.property = { landlordId: userId };
+      propertyWhere.landlordId = userId;
     }
 
     // 2. Status Filter (e.g., "PENDING_PAYMENT", "ACTIVE")
@@ -88,10 +89,12 @@ class BookingRepository {
 
     // 3. Search Filter (Search by Property Title)
     if (filters?.search) {
-      where.property = {
-        ...(where.property || {}), // Preserve existing relation filter
-        title: { contains: filters.search, mode: "insensitive" },
-      };
+      propertyWhere.title = { contains: filters.search, mode: "insensitive" };
+    }
+
+    // Apply property filter if needed
+    if (Object.keys(propertyWhere).length > 0) {
+      where.property = propertyWhere;
     }
 
     // 4. Cursor Logic (Same as before)

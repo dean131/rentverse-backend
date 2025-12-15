@@ -1,26 +1,30 @@
 services:
+  # ------------------------------------
+  # APPLICATION
+  # ------------------------------------
   api:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production # Targets the optimized 'production' stage
-    restart: always      # Auto-restart on crash
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      # In production, ensure these are loaded from secure .env files or secret managers
-      - DATABASE_URL=postgresql://rentverse:supersecurepassword@db:5432/rentverse_db?schema=public
-      - REDIS_HOST=cache
-      - REDIS_PORT=6379
-      - MINIO_ENDPOINT=minio_storage
-      - MINIO_PORT=9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=miniosecretpassword
-      - STORAGE_PUBLIC_HOST=https://storage.yourdomain.com # Use real domain
-      - JWT_SECRET=rentverse_secret_key_2025
-      - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY}
-      - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY}
-    ports:
-      - "3000:3000"
-    # No volumes mapped (Code is baked into the image)
-    # No Prisma Studio port exposed
+      target: production
+    restart: always
+    env_file:
+      - .env
+
+  # ------------------------------------
+  # INFRASTRUCTURE (Ports Disabled)
+  # ------------------------------------
+  db:
+    ports: [] # Access only via internal network
+
+  redis:
+    ports: [] # Access only via internal network
+
+  minio:
+    ports: [] # Access Console/API via internal network (Reverse Proxy)
+
+  mailpit:
+    ports: [] # Access UI via internal network (Reverse Proxy)
+
+  waha:
+    ports: [] # Access via internal network (Reverse Proxy)
