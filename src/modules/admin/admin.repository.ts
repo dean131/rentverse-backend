@@ -135,6 +135,58 @@ class AdminRepository {
       data: { isVerified },
     });
   }
+
+  /**
+   * [NEW] Find all properties for Admin Management
+   */
+  async findAllProperties(
+    skip: number,
+    take: number,
+    filters: { search?: string; status?: "PENDING" | "VERIFIED" | "ALL" }
+  ) {
+    const where: Prisma.PropertyWhereInput = {
+      deletedAt: null,
+    };
+
+    // Filter by Verification Status
+    if (filters.status === "PENDING") {
+      where.isVerified = false;
+    } else if (filters.status === "VERIFIED") {
+      where.isVerified = true;
+    }
+
+    // Search by Title or City
+    if (filters.search) {
+      where.OR = [
+        { title: { contains: filters.search, mode: "insensitive" } },
+        { city: { contains: filters.search, mode: "insensitive" } },
+      ];
+    }
+
+    // Execute Query
+    const [total, properties] = await prisma.$transaction([
+      prisma.property.count({ where }),
+      prisma.property.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: "desc" },
+        include: {
+          landlord: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+          propertyType: { select: { label: true } },
+          images: {
+            where: { isPrimary: true },
+            take: 1,
+            select: { url: true },
+          },
+        },
+      }),
+    ]);
+
+    return { total, properties };
+  }
 }
 
 export default new AdminRepository();

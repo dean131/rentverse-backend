@@ -5,8 +5,8 @@ import {
   VerifyUserInput,
   AdjustTrustInput,
   VerifyPropertyInput,
+  ListPropertiesQuery,
 } from "./admin.schema.js";
-import { env } from "../../config/env.js";
 import AppError from "../../shared/utils/AppError.js";
 import eventBus from "../../shared/bus/event-bus.js";
 
@@ -203,6 +203,60 @@ class AdminService {
 
     const action = input.isVerified ? "approved" : "rejected";
     return { message: `Property has been ${action}` };
+  }
+
+  /**
+   * [NEW] Get List of Properties (Admin View)
+   */
+  async getAllProperties(query: ListPropertiesQuery) {
+    const page = query.page;
+    const limit = query.limit;
+    const skip = (page - 1) * limit;
+
+    const { total, properties } = await adminRepository.findAllProperties(
+      skip,
+      limit,
+      {
+        search: query.search,
+        status: query.status as "PENDING" | "VERIFIED" | "ALL",
+      }
+    );
+
+    // Transform Data
+    const data = properties.map((prop) => ({
+      id: prop.id,
+      title: prop.title,
+      city: prop.city,
+      price: Number(prop.price),
+      currency: prop.currency,
+      status: prop.isVerified ? "VERIFIED" : "PENDING",
+      type: prop.propertyType.label,
+      submittedAt: prop.createdAt,
+
+      // Landlord Info (So admin knows who to contact)
+      landlord: {
+        id: prop.landlord.id,
+        name: prop.landlord.name,
+        email: prop.landlord.email,
+        avatarUrl: storageService.getPublicUrl(prop.landlord.avatarUrl),
+      },
+
+      // Thumbnail
+      thumbnail:
+        prop.images.length > 0
+          ? storageService.getPublicUrl(prop.images[0].url)
+          : null,
+    }));
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
 

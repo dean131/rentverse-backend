@@ -68,6 +68,16 @@ export const verifyPropertySchema = z
     }
   );
 
+  // [NEW] List Properties Query Schema
+export const listPropertiesSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  search: z.string().optional(),
+  // Filter by verification status: "pending", "verified", or "all"
+  status: z.enum(["PENDING", "VERIFIED", "ALL"]).default("ALL"), 
+});
+
+export type ListPropertiesQuery = z.infer<typeof listPropertiesSchema>;
 export type VerifyPropertyInput = z.infer<typeof verifyPropertySchema>;
 export type ListUsersQuery = z.infer<typeof listUsersSchema>;
 export type VerifyUserInput = z.infer<typeof verifyUserSchema>;

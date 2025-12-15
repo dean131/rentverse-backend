@@ -61,6 +61,31 @@ class AdminController {
     );
     return sendSuccess(res, result, "Property verification processed");
   });
+
+  /**
+   * [NEW] GET /admin/properties
+   * List properties with filters (Pending, Verified, Search)
+   */
+  getProperties = catchAsync(async (req: Request, res: Response) => {
+    // Cast query to strict type (or let Zod handle it if you use a parser in service)
+    const query = {
+      page: Number(req.query.page) || 1,
+      limit: Number(req.query.limit) || 10,
+      search: req.query.search as string,
+      status: (req.query.status as "PENDING" | "VERIFIED" | "ALL") || "ALL",
+    };
+
+    const result = await adminService.getAllProperties(query);
+
+    return sendPaginated(
+      res,
+      result.data,
+      result.meta.total,
+      result.meta.page,
+      result.meta.limit,
+      "Properties retrieved successfully"
+    );
+  });
 }
 
 export default new AdminController();

@@ -7,6 +7,7 @@ import {
   verifyUserSchema,
   adjustTrustSchema,
   verifyPropertySchema,
+  listPropertiesSchema,
 } from "./admin.schema.js";
 
 const router = Router();
@@ -35,6 +36,13 @@ router.post(
   "/trust/adjust",
   validate(adjustTrustSchema),
   adminController.adjustTrust
+);
+
+// [NEW] Property Management
+router.get(
+  "/properties",
+  validate(listPropertiesSchema, "query"),
+  adminController.getProperties
 );
 
 // Property Governance
