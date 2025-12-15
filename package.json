@@ -21,7 +21,9 @@
     "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up --build",
     "docker:dev-down": "docker compose -f compose.yml -f compose.dev.yml down",
     "docker:prod": "docker compose -f compose.yml -f compose.prod.yml up -d --build",
-    "docker:prod-down": "docker compose -f compose.yml -f compose.prod.yml down"
+    "docker:prod-down": "docker compose -f compose.yml -f compose.prod.yml down",
+    "docker:db-push": "docker exec rentverse_api npm run db:push",
+    "docker:db-seed": "docker exec rentverse_api npm run db:seed"
   },
   "keywords": [],
   "author": "",
