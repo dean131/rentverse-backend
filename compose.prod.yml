@@ -3,28 +3,126 @@ services:
   # APPLICATION
   # ------------------------------------
   api:
+    container_name: rentverse_api
     build:
       context: .
       dockerfile: Dockerfile
       target: production
     restart: always
-    env_file:
-      - .env
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      mailpit:
+        condition: service_started
+      waha:
+        condition: service_started
 
   # ------------------------------------
-  # INFRASTRUCTURE (Ports Disabled)
+  # INFRASTRUCTURE SERVICES
   # ------------------------------------
   db:
-    ports: [] # Access only via internal network
+    image: postgres:15-alpine
+    container_name: rentverse_db
+    restart: always
+    environment:
+      POSTGRES_USER: rentverse
+      POSTGRES_PASSWORD: supersecurepassword
+      POSTGRES_DB: rentverse_db
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rentverse -d rentverse_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
-    ports: [] # Access only via internal network
+    image: redis:alpine
+    container_name: rentverse_redis
+    restart: always
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   minio:
-    ports: [] # Access Console/API via internal network (Reverse Proxy)
+    image: minio/minio:latest
+    container_name: rentverse_storage
+    restart: always
+    # ports:
+    #   - "9000:9000"
+    #   - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
 
+  # -----------------------------------
+  # NEW: EMAIL TOOLS (Mailpit)
+  # -----------------------------------
   mailpit:
-    ports: [] # Access UI via internal network (Reverse Proxy)
+    image: axllent/mailpit
+    container_name: rentverse_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP Port (Backend connects here)
+      - "8025:8025" # Web UI (View emails here)
 
+  # -----------------------------------
+  # 6. WHATSAPP TOOLS (WAHA) - REPLACES EVOLUTION
+  # -----------------------------------
   waha:
-    ports: [] # Access via internal network (Reverse Proxy)
+    restart: always
+    container_name: rentverse_whatsapp
+    image: devlikeapro/waha:latest
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '10'
+    ports:
+      - "8080:3000"
+    volumes:
+      - 'waha_sessions:/app/.sessions'
+      - 'waha_media:/app/.media'
+    environment:
+      # Use the lightweight engine
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB 
+      - WAHA_API_KEY=ae274fee0f9f407fb843fa09700ac1ab
+      - WAHA_DASHBOARD_ENABLED=True
+      - WHATSAPP_SWAGGER_ENABLED=True
+      # Credentials for Dashboard
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=rentverse_pass
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=rentverse_pass
+
+networks:
+  default:
+    external: true
+    name: npm_network
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  waha_media:
+  waha_sessions:
