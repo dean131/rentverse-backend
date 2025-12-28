@@ -30,15 +30,13 @@ services:
     container_name: rentverse_db
     restart: always
     environment:
-      POSTGRES_USER: rentverse
-      POSTGRES_PASSWORD: supersecurepassword
-      POSTGRES_DB: rentverse_db
-    # ports:
-    #   - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rentverse -d rentverse_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -47,8 +45,6 @@ services:
     image: redis:alpine
     container_name: rentverse_redis
     restart: always
-    # ports:
-    #   - "6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -61,12 +57,9 @@ services:
     image: minio/minio:latest
     container_name: rentverse_storage
     restart: always
-    # ports:
-    #   - "9000:9000"
-    #   - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_API_CORS_ALLOW_ORIGIN: "*"
     volumes:
       - miniodata:/data
@@ -106,14 +99,14 @@ services:
     environment:
       # Use the lightweight engine
       - WHATSAPP_DEFAULT_ENGINE=NOWEB 
-      - WAHA_API_KEY=ae274fee0f9f407fb843fa09700ac1ab
+      - WAHA_API_KEY=${WAHA_API_KEY}
       - WAHA_DASHBOARD_ENABLED=True
       - WHATSAPP_SWAGGER_ENABLED=True
       # Credentials for Dashboard
-      - WAHA_DASHBOARD_USERNAME=admin
-      - WAHA_DASHBOARD_PASSWORD=rentverse_pass
-      - WHATSAPP_SWAGGER_USERNAME=admin
-      - WHATSAPP_SWAGGER_PASSWORD=rentverse_pass
+      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD}
+      - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
+      - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
 
 networks:
   default:

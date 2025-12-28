@@ -32,8 +32,6 @@ const envSchema = z.object({
     .default(false),
   // Public URL for Mobile App (Internal Fallback)
   MINIO_URL: z.string().url().default("http://localhost:9000"),
-  // External Public Domain (Primary for Prod)
-  STORAGE_PUBLIC_HOST: z.string().optional(),
   // Bucket Details
   MINIO_BUCKET: z.string().default("rentverse-public"),
   MINIO_REGION: z.string().default("us-east-1"),
@@ -55,8 +53,8 @@ const envSchema = z.object({
   // Notifications (Firebase)
   FIREBASE_CREDENTIALS_PATH: z.string().optional(),
 
-  WA_API_URL: z.string().default("http://waha:3000"),
-  WA_API_KEY: z.string().default("rentverse_secret_key"),
+  WAHA_API_URL: z.string().default("http://waha:3000"),
+  WAHA_API_KEY: z.string().default("rentverse_secret_key"),
 });
 
 // Parse and Validate

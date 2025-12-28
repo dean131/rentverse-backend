@@ -86,11 +86,10 @@ class StorageService {
     // If it's already a full URL (e.g. Google avatar), return as is
     if (path.startsWith("http")) return path;
 
-    // 1. Determine Host: Prioritize STORAGE_PUBLIC_HOST
     // Remove trailing slash if present to avoid double slashes
-    const host = (env.STORAGE_PUBLIC_HOST || env.MINIO_URL).replace(/\/$/, "");
+    const host = env.MINIO_URL.replace(/\/$/, "");
 
-    // 2. Clean Path: Remove leading slash
+    // Clean Path: Remove leading slash
     const cleanPath = path.replace(/^\//, "");
 
     return `${host}/${cleanPath}`;

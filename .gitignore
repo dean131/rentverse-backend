@@ -5,5 +5,5 @@ logs
 .env
 src/shared/prisma-client
 firebase-service-account.json
-TODO.md
-GEMINI.md
+*.md
+!README.md
