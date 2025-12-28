@@ -11,6 +11,9 @@
         {
           "name": "Register",
           "id": "70ac5018-0aac-4fd9-ae7a-dbcab14deff3",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -43,33 +46,21 @@
             {
               "listen": "test",
               "script": {
-                "id": "72eac812-4362-4c1e-bb56-55195f14cb60",
+                "type": "text/javascript",
                 "exec": [
                   "var jsonData = pm.response.json();",
                   "if (jsonData.status === 'success') {",
                   "    pm.collectionVariables.set(\"access_token\", jsonData.data.accessToken);",
                   "    pm.collectionVariables.set(\"refresh_token\", jsonData.data.refreshToken);",
                   "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "id": "9e4ca795-cce1-4c99-80d5-20fcf01563b3",
-                "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                ]
               }
             }
           ],
           "id": "abd4d951-df15-47b6-80e0-6f494db8b351",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -102,29 +93,21 @@
             {
               "listen": "test",
               "script": {
-                "id": "9a6c2b0d-adc6-4c8b-ae4a-cae05a722b2f",
+                "type": "text/javascript",
                 "exec": [
                   "var jsonData = pm.response.json();",
                   "if (jsonData.status === 'success') {",
                   "    pm.collectionVariables.set(\"access_token\", jsonData.data.accessToken);",
                   "    pm.collectionVariables.set(\"refresh_token\", jsonData.data.refreshToken);",
                   "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "id": "1f7aacb6-9a2b-48f8-81a1-0bdc8f4444cb",
-                "exec": [],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
           "id": "de74c130-ce6e-4d51-a647-ee7e535924ed",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -154,6 +137,9 @@
         {
           "name": "Update Profile",
           "id": "e38b6b5b-2c18-4c1a-8c8b-4acf17173d75",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "PUT",
             "header": [],
@@ -183,6 +169,9 @@
         {
           "name": "Me",
           "id": "d3b9f4b3-8989-4ac2-8c71-6813040ad7a8",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -209,6 +198,9 @@
         {
           "name": "Get All Rental References",
           "id": "ade6863f-8201-4c24-8a4c-6fc5d7df7912",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -235,6 +227,9 @@
         {
           "name": "Create Property",
           "id": "c7ee7e2e-5efe-45f8-8c4d-5b862b1f4b2a",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -334,6 +329,9 @@
         {
           "name": "Get List Properties",
           "id": "9b870c38-3949-4ad7-a7e4-36706ed6d73a",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -380,6 +378,9 @@
         {
           "name": "Get Property Details",
           "id": "2cc01929-0fe7-4a71-a498-c61afa6abde2",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -394,6 +395,7 @@
               ],
               "variable": [
                 {
+                  "id": "1d8c8018-9621-47b5-b5e1-774612ad27d2",
                   "key": "id",
                   "value": "1205e218-52db-4ecc-b2d1-96a4e9bb2260"
                 }
@@ -413,6 +415,9 @@
         {
           "name": "Submit KYC Documents",
           "id": "bb850bb6-aa95-488e-83c3-2afd75b71944",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -454,6 +459,9 @@
         {
           "name": "Register Device",
           "id": "768cbb4b-472e-404b-8d00-5035210f51aa",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -490,6 +498,9 @@
         {
           "name": "Create Booking",
           "id": "baba9cf7-01fe-4837-bdad-d3bc141366e6",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -518,6 +529,9 @@
         {
           "name": "Get My Bookings",
           "id": "9d20e1c5-442b-4753-9aa2-1154a4bbf5b2",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -543,6 +557,9 @@
         {
           "name": "Pay",
           "id": "1ee1801e-5fa8-4db9-a390-8057b5f3b3a8",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -558,6 +575,7 @@
               ],
               "variable": [
                 {
+                  "id": "c78a3afd-847b-422a-a115-c30e1319d9b6",
                   "key": "invoiceId",
                   "value": "2128d6fc-9312-4a8f-8005-06feeba3e8fc"
                 }
@@ -570,6 +588,9 @@
         {
           "name": "Handle Midtrans Webhook",
           "id": "1f8ae87b-407d-4ce1-b13f-495602ce4663",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -596,6 +617,9 @@
         {
           "name": "Get User Wallet",
           "id": "6ce857a3-4e4d-4290-b2fa-c82dd44b3362",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -616,6 +640,9 @@
         {
           "name": "Request Payout",
           "id": "1bba7da1-5aed-40b2-86fa-7c0bcc8af0cf",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
